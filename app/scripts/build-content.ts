@@ -1,5 +1,5 @@
 // Doc/Markdown/vol*/*.md → public/data/lessons-vol{n}.json + lessons-meta.json
-import { readFileSync, writeFileSync, readdirSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -60,6 +60,7 @@ mkdirSync(OUT, { recursive: true });
   const ws = new Map<string, string>();
   for (let v = 1; v <= 8; v++) {
     const d = join(SRC, `vol${v}`);
+    if (!existsSync(d)) continue;
     for (const f of readdirSync(d).filter(x => x.endsWith('.md'))) {
       for (const m of readFileSync(join(d, f), 'utf8').matchAll(/^###\s*\d+\.\s*([一-鿿]{2,12})\s*\/[^\n]+/gm)) {
         const pos = m[0].split(/\s+\/\s+/)[2] ?? '';
@@ -296,6 +297,7 @@ const sensesData: Record<string, string[]> = JSON.parse(readFileSync(join(ROOT, 
 const volumes = Array.from({ length: 8 }, (_, index) => {
   const vol = index + 1;
   const dir = join(SRC, `vol${vol}`);
+  if (!existsSync(dir)) return [];
   const files = readdirSync(dir).filter(f => f.endsWith('.md')).sort();
   return files.map(f => parseLesson(vol, f, readFileSync(join(dir, f), 'utf8')));
 });
