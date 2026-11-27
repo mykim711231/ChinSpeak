@@ -18,7 +18,7 @@ const path = require('node:path');
         const canvas = document.createElement('canvas');
         canvas.width = canvas.height = size;
         const context = canvas.getContext('2d');
-        context.fillStyle = '#0f766e';
+        context.fillStyle = '#b45309';
         context.fillRect(0, 0, size, size);
         const inset = size * (1 - scale) / 2;
         context.drawImage(image, inset, inset, size * scale, size * scale);
