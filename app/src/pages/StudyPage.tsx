@@ -35,13 +35,13 @@ export default function StudyPage() {
   return (
     <main className="p-4 pb-28 space-y-3">
       <h1 className="text-xl font-bold">학습</h1>
-      <p className="text-sm text-slate-600">{basic ? '교재에서 대화·표현·패턴·롤플레이를 읽고, 편하게 듣기에서 학습 대상을 골라 들을 수 있어요.' : '학습할 과를 고르고 원하는 학습을 시작하세요. 학습 대상(대화/패턴)은 각 학습 화면에서 고를 수 있어요.'}</p>
+      <p className="text-sm text-slate-600">{basic ? '교재에서 대화·패턴·단어·롤플레이를 읽고, 편하게 듣기에서 학습 대상을 골라 들을 수 있어요.' : '학습할 과를 고르고 원하는 학습을 시작하세요. 학습 대상(대화/패턴)은 각 학습 화면에서 고를 수 있어요.'}</p>
       <LessonSelect label="학습할 과" metas={meta} value={sel} onChange={setPick} recId={rec?.id} isDone={basic ? undefined : (id) => isUnlocked(prog, id)} />
 
       {basic ? (
         <Link to={sel ? `/lesson/${sel}` : '/path'} className={card}>
           <Icon name="map" size={26} className="text-brand flex-none" />
-          <span className="min-w-0 flex-1"><b className="block">교재 학습</b><span className="block text-xs text-slate-500">대화·표현·패턴과 전체 듣기</span></span>
+          <span className="min-w-0 flex-1"><b className="block">교재 학습</b><span className="block text-xs text-slate-500">대화·패턴·단어와 전체 듣기</span></span>
           <Icon name="arrowRight" size={18} className="text-slate-400" />
         </Link>
       ) : <>

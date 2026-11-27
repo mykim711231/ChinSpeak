@@ -14,7 +14,7 @@ import { isBasicMode } from '../lib/compatibility';
 import type { Lesson, LessonMeta } from '../types/lesson';
 
 type Tab = 'dialog' | 'vocab' | 'pattern' | 'task';
-const TABS: [Tab, string][] = [['dialog', '대화'], ['vocab', '표현'], ['pattern', '패턴'], ['task', '롤플레이']];
+const TABS: [Tab, string][] = [['dialog', '대화'], ['pattern', '패턴'], ['vocab', '단어'], ['task', '롤플레이']];
 
 const chip = (on: boolean) =>
   `px-3 py-1 rounded-full text-sm border ${
@@ -152,7 +152,7 @@ export default function LessonPage() {
       {completed && <p role="status" className="text-sm text-brand">{passCount}회 학습 듣기를 마쳤어요. 기존 표시 설정으로 돌아왔어요.</p>}
       <p className="text-xs text-slate-500">
         {tab === 'task'
-          ? '롤플레이는 과업을 실제로 말해 보세요. 문장 듣기는 대화·표현·패턴 탭에서 사용할 수 있어요.'
+          ? '롤플레이는 과업을 실제로 말해 보세요. 문장 듣기는 대화·패턴·단어 탭에서 사용할 수 있어요.'
           : `${tab === 'vocab' ? VOCAB_GUIDE : LISTENING_GUIDE} 매회 선택한 ${tabLabel} 전체를 듣고, 종료하면 기존 표시 설정으로 돌아와요.`}
       </p>
 
@@ -215,7 +215,7 @@ export default function LessonPage() {
 
       {tab === 'vocab' && lesson.vocab.length > 0 && (
         <section>
-          <h2 className="font-bold text-sm text-brand mb-2">核心表达 · 핵심 표현</h2>
+          <h2 className="font-bold text-sm text-brand mb-2">核心表达 · 핵심 단어</h2>
           <ul className="space-y-2">
             {lesson.vocab.map((v, i) => (
               <li

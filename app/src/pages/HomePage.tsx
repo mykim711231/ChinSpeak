@@ -83,7 +83,7 @@ export default function HomePage() {
       <section className="rounded-2xl bg-brand text-white p-5 shadow-sm">
         <p className="text-xs opacity-80">현대 중국어 회화</p>
         <h1 className="text-2xl font-extrabold mt-0.5">대화로 배우는 중국어</h1>
-        <p className="text-sm opacity-90 mt-1">실제 대화를 듣고, 핵심 표현과 패턴을 익히고, 롤플레이로 말해 보세요.</p>
+        <p className="text-sm opacity-90 mt-1">실제 대화를 듣고, 패턴과 단어를 익히고, 롤플레이로 말해 보세요.</p>
         <div className="flex flex-wrap gap-2 mt-4">
           <Link to={next ? `/lesson/${next.id}` : '/path'} className="inline-flex items-center gap-1.5 rounded-full bg-white text-brand font-semibold text-sm px-4 py-2">
             <Icon name="speaker" size={16} /> 이어서 학습 <Icon name="arrowRight" size={14} />
