@@ -5,7 +5,7 @@ export default function TopBar() {
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-slate-200 bg-paper/95 backdrop-blur px-4 py-2.5">
       <Link to="/" className="flex items-center gap-2 min-w-0" aria-label="ChinSpeak 홈">
-        <span className="grid h-9 w-9 flex-none place-items-center rounded-lg bg-[#b45309] text-white text-[9px] font-extrabold leading-[1.05] text-center">
+        <span className="grid h-9 w-9 flex-none place-items-center rounded-lg bg-brand text-white text-[9px] font-extrabold leading-[1.05] text-center">
           Chin<br />Speak
         </span>
         <span className="font-bold text-brand text-lg">ChinSpeak</span>
