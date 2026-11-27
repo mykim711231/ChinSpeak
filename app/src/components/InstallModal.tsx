@@ -1,0 +1,76 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { isIOS, isInAppBrowser, isStandalone } from '../lib/inapp';
+import { useSettingsStore } from '../stores/useSettingsStore';
+import Icon from './Icon';
+import { isBasicMode } from '../lib/compatibility';
+
+type BIPEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
+const WEEK = 7 * 24 * 3600 * 1000;
+
+/** S-010 설치 안내: Android 는 beforeinstallprompt, iOS 는 공유→홈 화면에 추가 가이드. 온보딩 이후 / 7일 후 재표시 */
+export default function InstallModal() {
+  const navigate = useNavigate();
+  const { onboarded, installDismissedAt, dismissInstall } = useSettingsStore();
+  const [evt, setEvt] = useState<BIPEvent | null>(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const h = (e: Event) => { e.preventDefault(); setEvt(e as BIPEvent); };
+    window.addEventListener('beforeinstallprompt', h);
+    return () => window.removeEventListener('beforeinstallprompt', h);
+  }, []);
+
+  const eligible = !isBasicMode() && onboarded && !isStandalone() && !isInAppBrowser().kind && Date.now() - installDismissedAt > WEEK;
+  useEffect(() => {
+    const installed = () => { setOpen(false); setEvt(null); };
+    window.addEventListener('appinstalled', installed);
+    return () => window.removeEventListener('appinstalled', installed);
+  }, []);
+  useEffect(() => {
+    if (!eligible || !(evt || isIOS())) return;
+    const t = window.setTimeout(() => setOpen(true), 1200);
+    return () => window.clearTimeout(t);
+  }, [eligible, evt]);
+
+  if (!open) return null;
+  const close = () => { dismissInstall(); setOpen(false); };
+  const install = async () => {
+    if (!evt) return;
+    // 설정·학습 상세에서 설치하더라도 시작 화면은 홈으로 통일한다.
+    navigate('/', { replace: true });
+    await evt.prompt();
+    await evt.userChoice.catch(() => undefined);
+    close();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="inst-title">
+      <div className="bg-paper rounded-2xl max-w-md w-full p-6 shadow-xl">
+        <div className="flex items-center gap-2 mb-2">
+          <Icon name="download" size={22} className="text-brand" />
+          <h3 id="inst-title" className="text-lg font-bold">앱으로 설치하기</h3>
+        </div>
+        <p className="text-sm text-slate-700">교재·단어장은 자동으로 저장하고 새 버전도 자동으로 받아 둬요. 기기 음성을 오프라인에서 쓰려면 스마트폰에 중국어 음성팩이 필요해요.</p>
+        {evt && <p className="mt-2 text-xs text-slate-500">설치는 홈 화면 주소로 진행해요.</p>}
+        {evt ? (
+          <button type="button" onClick={() => void install()} className="w-full mt-4 rounded-full bg-brand text-white font-semibold py-3">설치</button>
+        ) : (
+          <ol className="mt-3 space-y-1 text-sm list-decimal pl-5">
+            <li>Safari 하단의 <b>공유(↑)</b> 버튼을 누르세요.</li>
+            <li><b>홈 화면에 추가</b>를 선택하세요.</li>
+          </ol>
+        )}
+        {evt && /SamsungBrowser/i.test(navigator.userAgent) && (
+          <p className="mt-2 text-xs text-amber-800">삼성 인터넷에서는 “안전하지 않은 앱 차단됨” 경고가 날 수 있어요. <b>무시하고 설치하기</b>를 누르거나 Chrome에서 설치하세요.</p>
+        )}
+        {evt && /Android/i.test(navigator.userAgent) && (
+          <a href={`${import.meta.env.BASE_URL}browser.html#/`} className="mt-3 block text-center text-sm font-semibold text-brand underline">설치한 앱이 바로 닫히면 Chrome 바로가기 사용</a>
+        )}
+        <button type="button" onClick={close} className="w-full mt-2 rounded-full border border-slate-300 bg-white font-semibold py-2.5">
+          나중에 (7일간 보지 않기)
+        </button>
+      </div>
+    </div>
+  );
+}
