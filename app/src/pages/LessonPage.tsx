@@ -156,7 +156,7 @@ export default function LessonPage() {
           : `${tab === 'vocab' ? VOCAB_GUIDE : LISTENING_GUIDE} 매회 선택한 ${tabLabel} 전체를 듣고, 종료하면 기존 표시 설정으로 돌아와요.`}
       </p>
 
-      <div role="tablist" aria-label="레슨 영역" className="flex gap-1 overflow-x-auto border-b border-slate-200">
+      <div role="tablist" aria-label="레슨 영역" className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-slate-200">
         {TABS.map(([key, label]) => (
           <button
             key={key}
