@@ -136,7 +136,7 @@ export default function LessonPage() {
           <button
             type="button"
             disabled={!playableVerses.length}
-            onClick={() => { if (playing >= 0 && !learning) stopAll(); else void play('once'); }}
+            onClick={() => { if (playing >= 0 && !learning) stopAll(); else void play('once', { withKo: true }); }}
             className="inline-flex items-center gap-1.5 rounded-full border border-brand text-brand text-sm font-semibold px-3 py-1 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Icon name={playing >= 0 && !learning ? 'stop' : 'play'} size={14} /> {playing >= 0 && !learning ? '멈추기' : `${tabLabel} 전체 듣기`}
