@@ -77,10 +77,10 @@ test('퀴즈: 정답이 보기에 있고 보기는 서로 다르다', () => {
   assert.deepEqual(buildQuiz([line(1)]), []);
 });
 
-test('떠올리기 순서: 대화는 순서 유지, 표현은 무작위', () => {
+test('떠올리기 순서: 대화는 순서 유지, 패턴은 무작위', () => {
   const d = (n: number) => ({ ...line(n), source: 'dialog' as const });
-  const v = (n: number) => ({ ...line(n), source: 'vocab' as const });
-  const out = recallOrder([d(1), d(2), d(3), v(4), v(5), v(6), v(7)]);
+  const p = (n: number) => ({ ...line(n), source: 'pattern' as const });
+  const out = recallOrder([d(1), d(2), d(3), p(4), p(5), p(6), p(7)]);
   assert.deepEqual(out.slice(0, 3).map((l) => l.verse.zh), ['句1', '句2', '句3']);
   assert.deepEqual(new Set(out.slice(3).map((l) => l.verse.zh)), new Set(['句4', '句5', '句6', '句7']));
 });

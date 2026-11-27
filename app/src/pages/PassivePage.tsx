@@ -21,7 +21,7 @@ const MODES: { v: Mode; l: string; icon: string }[] = [
 const btn = 'inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white text-sm font-semibold px-3 py-2 disabled:opacity-40';
 const btnBrand = 'inline-flex items-center gap-1.5 rounded-full bg-brand text-white text-sm font-semibold px-4 py-2 disabled:opacity-40';
 
-/** 해금한 과의 대화·표현을 선택한 음성 방식으로 반복 재생한다. */
+/** 해금한 과의 대화·패턴을 선택한 음성 방식으로 반복 재생한다. */
 export default function PassivePage() {
   const basic = isBasicMode();
   const { source, setSource } = useStudySource();
@@ -134,7 +134,7 @@ export default function PassivePage() {
       <h1 className="text-xl font-bold inline-flex items-center gap-2"><Icon name="headphones" size={22} className="text-brand" /> 편하게 듣기</h1>
       <StudySourceSelector value={source} onChange={(value) => { stop(); setNote(null); setSource(value); }} />
       <p className="text-sm text-brand">재생 대상: {studyTargetText(source)}</p>
-      <p className="text-sm text-slate-600">{basic ? '모든 과의 대화·표현을 바로 듣고 반복할 수 있어요. 화면을 켜 둔 상태에서 사용해 주세요.' : <>심화 학습이나 데일리로 <b>익숙해진 과</b>를 반복해서 들어요. {voiceMode === 'device' ? '기기 음성은 화면을 켜 둔 상태에서 사용해 주세요.' : '녹음 음성은 화면을 꺼도 재생할 수 있어요(기기·브라우저에 따라 제한될 수 있어요).'}</>}</p>
+      <p className="text-sm text-slate-600">{basic ? '모든 과의 대화·패턴을 바로 듣고 반복할 수 있어요. 화면을 켜 둔 상태에서 사용해 주세요.' : <>심화 학습이나 데일리로 <b>익숙해진 과</b>를 반복해서 들어요. {voiceMode === 'device' ? '기기 음성은 화면을 켜 둔 상태에서 사용해 주세요.' : '녹음 음성은 화면을 꺼도 재생할 수 있어요(기기·브라우저에 따라 제한될 수 있어요).'}</>}</p>
       {!basic && <p className="text-xs text-slate-500">해금 방법: <b>학습</b> 메뉴에서 한 과의 <b>심화 학습</b>을 마치거나 <b>10분 데일리</b> 6단계를 끝내면 그 과가 자동으로 추가돼요.</p>}
 
       {unlocked.length === 0 ? (

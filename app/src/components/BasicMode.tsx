@@ -16,7 +16,7 @@ export function BasicModeUnavailable({ feature }: { feature: string }) {
   return (
     <main className="p-4 space-y-3">
       <h1 className="text-xl font-bold">{feature} 이용 안내</h1>
-      <p className="text-sm">기본 학습 모드에서 제한되는 기능이에요. 대화·표현과 문장별·전체 듣기로 학습해 주세요.</p>
+      <p className="text-sm">기본 학습 모드에서 제한되는 기능이에요. 대화·패턴과 문장별·전체 듣기로 학습해 주세요.</p>
       <div className="flex flex-wrap gap-3 text-brand font-semibold underline">
         <Link to={id ? `/lesson/${id}` : '/path'}>교재 학습하기</Link>
         <Link to="/passive">편하게 듣기</Link>

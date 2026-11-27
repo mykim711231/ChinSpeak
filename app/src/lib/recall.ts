@@ -69,9 +69,9 @@ export function masteryScore(quiz: number | null, recall: number): number {
   return Math.round(quiz === null ? recall * 100 : (quiz * 50 + recall * 50));
 }
 
-/** 떠올리기 순서: 대화는 교재 순서, 표현은 무작위 */
-export function recallOrder<T extends { source: 'text' | 'dialog' | 'vocab' }>(lines: T[]): T[] {
-  const vocab = lines.filter((l) => l.source === 'vocab');
-  const mixed = shuffled(vocab.map((_, i) => i)).map((i) => vocab[i]);
-  return [...lines.filter((l) => l.source !== 'vocab'), ...mixed];
+/** 떠올리기 순서: 대화는 교재 순서, 패턴은 무작위 */
+export function recallOrder<T extends { source: 'text' | 'dialog' | 'vocab' | 'pattern' }>(lines: T[]): T[] {
+  const pattern = lines.filter((l) => l.source === 'pattern');
+  const mixed = shuffled(pattern.map((_, i) => i)).map((i) => pattern[i]);
+  return [...lines.filter((l) => l.source !== 'pattern'), ...mixed];
 }

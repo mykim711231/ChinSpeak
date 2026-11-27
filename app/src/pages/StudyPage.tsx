@@ -35,7 +35,7 @@ export default function StudyPage() {
   return (
     <main className="p-4 pb-28 space-y-3">
       <h1 className="text-xl font-bold">학습</h1>
-      <p className="text-sm text-slate-600">{basic ? '교재에서 대화·표현·패턴·롤플레이를 읽고, 편하게 듣기에서 학습 대상을 골라 들을 수 있어요.' : '학습할 과를 고르고 원하는 학습을 시작하세요. 학습 대상(대화/표현)은 각 학습 화면에서 고를 수 있어요.'}</p>
+      <p className="text-sm text-slate-600">{basic ? '교재에서 대화·표현·패턴·롤플레이를 읽고, 편하게 듣기에서 학습 대상을 골라 들을 수 있어요.' : '학습할 과를 고르고 원하는 학습을 시작하세요. 학습 대상(대화/패턴)은 각 학습 화면에서 고를 수 있어요.'}</p>
       <LessonSelect label="학습할 과" metas={meta} value={sel} onChange={setPick} recId={rec?.id} isDone={basic ? undefined : (id) => isUnlocked(prog, id)} />
 
       {basic ? (

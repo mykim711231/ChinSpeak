@@ -74,12 +74,13 @@ export const useSettingsStore = create<S>()(
     }),
     {
       name: 'chinspeak-settings',
-      version: 5,
+      version: 6,
       // 이전 단어/구/절 선택은 표시 여부만 유지한다. 나머지 사용자 설정은 보존한다.
       migrate: (old) => {
         const o = (old ?? {}) as Record<string, unknown>;
         const { large, showBreaks, breakLevel, ...rest } = o;
-        const source = rest.studySource === 'vocab' || rest.studySource === 'all' ? rest.studySource : 'dialog';
+        const legacy = rest.studySource;
+        const source = legacy === 'pattern' || legacy === 'all' || legacy === 'vocab' ? (legacy === 'vocab' ? 'pattern' : legacy) : 'dialog';
         return {
           ...rest,
           studySource: source,

@@ -11,7 +11,7 @@ type P = {
   last?: string;
   /** 마스터리 완료(Final Check 5점 자기평가) */
   mastered: Record<string, MasteryResult>;
-  /** 대화·표현별 마스터리 평가. 기존 mastered 기록은 대화 평가로 유지한다. */
+  /** 대화·패턴별 마스터리 평가. 기존 mastered 기록은 대화 평가로 유지한다. */
   masteryBySource: Record<string, Partial<Record<MasterySource, MasteryResult>>>;
   /** 데일리 6단계 종료한 과 */
   dailyDone: Record<string, string>;

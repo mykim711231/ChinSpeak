@@ -35,6 +35,7 @@ export default function ReviewPage() {
         if (!lesson) continue;
         for (const v of lesson.text) others.push({ verse: v, source: 'text' });
         for (const d of lesson.dialogs) for (const t of d.turns) others.push({ verse: t.verse as Verse, source: 'dialog', speaker: t.speaker });
+        for (const p of lesson.patterns) for (const v of p.examples) others.push({ verse: v, source: 'pattern' });
         for (const v of lesson.vocab) others.push({
           verse: { zh: v.zh, pinyin: v.pinyin, ko: v.ko, chunks: [{ id: `${lesson.id}:vocab:${v.zh}`, zh: v.zh, pinyin: v.pinyin, ko: v.ko }] },
           source: 'vocab',
@@ -43,6 +44,8 @@ export default function ReviewPage() {
         if (text) { out.push({ verse: text, source: 'text', lessonId: c.lessonId }); continue; }
         const turn = lesson.dialogs.flatMap((d) => d.turns).find((t) => t.verse.zh === c.zh);
         if (turn) { out.push({ verse: turn.verse as Verse, source: 'dialog', speaker: turn.speaker, lessonId: c.lessonId }); continue; }
+        const pattern = lesson.patterns.flatMap((p) => p.examples).find((v) => v.zh === c.zh);
+        if (pattern) { out.push({ verse: pattern, source: 'pattern', lessonId: c.lessonId }); continue; }
         const vocab = lesson.vocab.find((v) => v.zh === c.zh);
         if (vocab) out.push({
           verse: { zh: vocab.zh, pinyin: vocab.pinyin, ko: vocab.ko, chunks: [{ id: `${lesson.id}:vocab:${vocab.zh}`, zh: vocab.zh, pinyin: vocab.pinyin, ko: vocab.ko }] },

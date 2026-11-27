@@ -183,7 +183,7 @@ export default function DailyPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-4 min-h-40 space-y-2">
             {v && (
               <div className={cur.blur ? 'blur-md select-none' : ''} aria-hidden={cur.blur}>
-                <p className="text-xs text-slate-500 mb-2">{line.source === 'vocab' ? '표현' : line.source === 'dialog' ? '대화' : '본문'}{line.speaker ? ` · ${line.speaker}` : ''}</p>
+                <p className="text-xs text-slate-500 mb-2">{line.source === 'pattern' ? '패턴' : line.source === 'vocab' ? '표현' : line.source === 'dialog' ? '대화' : '본문'}{line.speaker ? ` · ${line.speaker}` : ''}</p>
                 {step === 2 || step === 3 ? (
                   <div className="flex flex-wrap gap-2">
                     {v.chunks.map((c) => {
