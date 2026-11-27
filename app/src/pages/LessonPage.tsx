@@ -7,6 +7,10 @@ import GrammarText from '../components/GrammarText';
 import Icon from '../components/Icon';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import { useProgressStore } from '../stores/useProgressStore';
+import { useLessonPlayback } from '../hooks/useLessonPlayback';
+import { usePlaybackFollow } from '../hooks/usePlaybackFollow';
+import { LISTENING_GUIDE, LISTENING_PASSES } from '../lib/learningListening';
+import { isBasicMode } from '../lib/compatibility';
 import type { Lesson, LessonMeta } from '../types/lesson';
 
 const chip = (on: boolean) =>
@@ -23,6 +27,13 @@ export default function LessonPage() {
   const settings = useSettingsStore();
   const { showZh, showPinyin, showKo, showMeaningUnits, toggle } = settings;
   const { markDone, setLast } = useProgressStore();
+  const basic = isBasicMode();
+  const playback = useLessonPlayback(lesson?.text ?? [], `${id}:dialogue`, LISTENING_PASSES);
+  const { playing, step, pass, display, passLabel, completed, play, stop: stopAll } = playback;
+  const learning = pass !== null;
+  const follow = usePlaybackFollow(playing, `${id}:dialogue`);
+  const caption = display ?? { showZh, showPinyin, showKo };
+  const passCount = LISTENING_PASSES.length;
 
   useEffect(() => {
     void loadMeta().then(setMeta);
@@ -69,7 +80,7 @@ export default function LessonPage() {
   const next = idx >= 0 ? meta[idx + 1] : undefined;
 
   return (
-    <main className="p-4 pb-24 space-y-4">
+    <main ref={follow.readingRef} className="p-4 pb-24 space-y-4">
       <Link to="/path" className="text-sm text-slate-500">
         ← 학습 경로
       </Link>
@@ -84,10 +95,48 @@ export default function LessonPage() {
         </div>
       </header>
 
+      <div ref={follow.controlsRef} className="flex flex-wrap items-center gap-2" aria-label="듣기 설정">
+        {!basic && (
+          <Link to={`/daily?id=${lesson.id}`} className="inline-flex items-center gap-1.5 rounded-full bg-brand text-white text-sm font-semibold px-3 py-1">
+            <Icon name="timer" size={14} /> 10분 데일리
+          </Link>
+        )}
+        {!basic && (
+          <Link to={`/lesson/${lesson.id}/mastery?source=all`} className="inline-flex items-center gap-1.5 rounded-full bg-brand text-white text-sm font-semibold px-3 py-1">
+            <Icon name="target" size={14} /> 심화 학습
+          </Link>
+        )}
+        <button
+          type="button"
+          disabled={!lesson.text.length}
+          aria-pressed={learning}
+          onClick={() => { if (learning) stopAll(); else void play('learning'); }}
+          className="inline-flex items-center gap-1.5 rounded-full border border-brand text-brand text-sm font-semibold px-3 py-1 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Icon name={learning ? 'stop' : 'repeat'} size={14} /> {learning ? '학습 듣기 멈추기' : `대화 ${passCount}회 학습 듣기`}
+        </button>
+        <button
+          type="button"
+          disabled={!lesson.text.length}
+          onClick={() => { if (playing >= 0 && !learning) stopAll(); else void play('once'); }}
+          className="inline-flex items-center gap-1.5 rounded-full border border-brand text-brand text-sm font-semibold px-3 py-1 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Icon name={playing >= 0 && !learning ? 'stop' : 'play'} size={14} /> {playing >= 0 && !learning ? '멈추기' : '대화 전체 듣기'}
+        </button>
+        {playing >= 0 && (
+          <span role="status" className="text-xs text-slate-500">
+            {learning ? `${(pass ?? 0) + 1}/${passCount}회 · ${passLabel} · ` : '재생 중 '}
+            {(learning ? step : playing) + 1}/{lesson.text.length}문장
+          </span>
+        )}
+      </div>
+      {completed && <p role="status" className="text-sm text-brand">{passCount}회 학습 듣기를 마쳤어요. 기존 표시 설정으로 돌아왔어요.</p>}
+      <p className="text-xs text-slate-500">{LISTENING_GUIDE} 매회 선택한 대화 전체를 듣고, 종료하면 기존 표시 설정으로 돌아와요.</p>
+
       <div className="flex flex-wrap gap-2">
-        <button type="button" aria-pressed={showZh} className={chip(showZh)} onClick={() => toggle('showZh')}>한자</button>
-        <button type="button" aria-pressed={showPinyin} className={chip(showPinyin)} onClick={() => toggle('showPinyin')}>병음</button>
-        <button type="button" aria-pressed={showKo} className={chip(showKo)} onClick={() => toggle('showKo')}>한글</button>
+        <button type="button" disabled={learning} aria-pressed={caption.showZh} className={chip(caption.showZh)} onClick={() => toggle('showZh')}>한자</button>
+        <button type="button" disabled={learning} aria-pressed={caption.showPinyin} className={chip(caption.showPinyin)} onClick={() => toggle('showPinyin')}>병음</button>
+        <button type="button" disabled={learning} aria-pressed={caption.showKo} className={chip(caption.showKo)} onClick={() => toggle('showKo')}>한글</button>
         <button type="button" aria-pressed={showMeaningUnits} className={chip(showMeaningUnits)} onClick={() => toggle('showMeaningUnits')}>의미단위</button>
       </div>
 
@@ -100,14 +149,27 @@ export default function LessonPage() {
         </section>
       )}
 
-      {lesson.dialogs.map((d, i) => (
-        <section key={i}>
-          <h2 className="font-bold text-sm text-brand mb-2">{d.title}</h2>
-          {d.turns.map((t, j) => (
-            <ChunkCard key={j} verse={t.verse} speaker={`${t.speaker}:`} />
-          ))}
-        </section>
-      ))}
+      {(() => {
+        let line = 0;
+        return lesson.dialogs.map((d, i) => (
+          <section key={i}>
+            <h2 className="font-bold text-sm text-brand mb-2">{d.title}</h2>
+            {d.turns.map((t, j) => {
+              const idx = line++;
+              return (
+                <div
+                  key={j}
+                  data-playback-line={idx}
+                  aria-current={idx === playing ? 'true' : undefined}
+                  className={idx === playing ? 'ring-2 ring-brand rounded-xl' : ''}
+                >
+                  <ChunkCard verse={t.verse} speaker={`${t.speaker}:`} display={display} onBeforeSpeak={stopAll} />
+                </div>
+              );
+            })}
+          </section>
+        ));
+      })()}
 
       {lesson.vocab.length > 0 && (
         <section>
@@ -168,7 +230,7 @@ export default function LessonPage() {
                   {p.meaning && <span className="text-sm text-slate-500 font-normal"> · {p.meaning}</span>}
                 </h3>
                 <div className="mt-2">
-                  {p.examples.map((v, j) => <ChunkCard key={j} verse={v} />)}
+                  {p.examples.map((v, j) => <ChunkCard key={j} verse={v} display={display} onBeforeSpeak={stopAll} />)}
                 </div>
               </article>
             ))}
