@@ -138,7 +138,7 @@ export default function SettingsPage() {
       <section>
         <SectionHeader title="화면" />
         <Card className="divide-y divide-slate-200">
-          <Row label="글자 크기" description="본문 전체의 글자 크기예요." stack>
+          <Row label="글자 크기" description="화면 전체의 글자 크기예요." stack>
             <Segmented<FontSize>
               value={s.fontSize}
               options={[{ v: 'md', l: '보통' }, { v: 'lg', l: '크게' }, { v: 'xl', l: '아주 크게' }]}

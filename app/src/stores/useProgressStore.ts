@@ -11,7 +11,7 @@ type P = {
   last?: string;
   /** 마스터리 완료(Final Check 5점 자기평가) */
   mastered: Record<string, MasteryResult>;
-  /** 본문·회화별 마스터리 평가. 기존 mastered 기록은 본문 평가로 유지한다. */
+  /** 대화·표현별 마스터리 평가. 기존 mastered 기록은 대화 평가로 유지한다. */
   masteryBySource: Record<string, Partial<Record<MasterySource, MasteryResult>>>;
   /** 데일리 6단계 종료한 과 */
   dailyDone: Record<string, string>;
@@ -27,9 +27,12 @@ type P = {
 
 export const isUnlocked = (s: Pick<P, 'mastered' | 'dailyDone'>, id: string) => !!(s.mastered[id] || s.dailyDone[id]);
 
-export const getMasteryResult = (s: Pick<P, 'mastered' | 'masteryBySource'>, id: string, source: MasterySource) =>
-  s.masteryBySource[id]?.[source] ?? (source !== 'all' ? s.masteryBySource[id]?.all : undefined)
-    ?? (source === 'text' && !s.masteryBySource[id] ? s.mastered[id] : undefined);
+export const getMasteryResult = (s: Pick<P, 'mastered' | 'masteryBySource'>, id: string, source: MasterySource) => {
+  const bySource = s.masteryBySource[id];
+  const legacy = bySource as Partial<Record<string, MasteryResult>> | undefined;
+  return bySource?.[source] ?? (source !== 'all' ? bySource?.all : undefined)
+    ?? (source === 'dialog' ? legacy?.text ?? (!bySource ? s.mastered[id] : undefined) : undefined);
+};
 
 /** 오늘(없으면 어제)부터 거꾸로 이어진 연속 일수 */
 export function calcStreak(days: Record<string, true>, today = new Date()): number {
@@ -54,10 +57,10 @@ export const useProgressStore = create<P>()(persist((set) => ({
     return { done };
   }),
   setLast: (last) => set({ last }),
-  markMastered: (id, score, source = 'text') => set((s) => {
+  markMastered: (id, score, source = 'dialog') => set((s) => {
     const at = toLocalDateKey();
     const result = { score, at };
-    const previous = s.masteryBySource[id] ?? (s.mastered[id] ? { text: s.mastered[id] } : {});
+    const previous = s.masteryBySource[id] ?? (s.mastered[id] ? { dialog: s.mastered[id] } : {});
     return {
       mastered: { ...s.mastered, [id]: result },
       masteryBySource: { ...s.masteryBySource, [id]: { ...previous, [source]: result } },
@@ -65,9 +68,9 @@ export const useProgressStore = create<P>()(persist((set) => ({
       days: { ...s.days, [at]: true },
     };
   }),
-  markDaily: (id, source = 'text') => set((s) => {
+  markDaily: (id, source = 'dialog') => set((s) => {
     const at = toLocalDateKey();
-    const previous = s.dailyBySource[id] ?? (s.dailyDone[id] ? { text: s.dailyDone[id] } : {});
+    const previous = s.dailyBySource[id] ?? (s.dailyDone[id] ? { dialog: s.dailyDone[id] } : {});
     return {
       dailyDone: { ...s.dailyDone, [id]: at },
       dailyBySource: { ...s.dailyBySource, [id]: { ...previous, [source]: at } },

@@ -131,7 +131,7 @@ export default function HomePage() {
       <section className={`${card} p-4`} aria-label="이해도 달성률">
         <h2 className="font-bold">이해도 달성률</h2>
         {sum === 0 ? (
-          <p className="text-sm text-slate-500 mt-1">본문 카드의 동그라미를 눌러 이해도를 표시해 보세요. 초록 → 노랑 → 빨강 순서로 바뀝니다.</p>
+          <p className="text-sm text-slate-500 mt-1">대화 카드의 동그라미를 눌러 이해도를 표시해 보세요. 초록 → 노랑 → 빨강 순서로 바뀝니다.</p>
         ) : (
           <>
             <div className="flex h-2.5 rounded-full overflow-hidden mt-2 bg-slate-200" role="img" aria-label={`초록 ${rate(cnt.green)}%, 노랑 ${rate(cnt.yellow)}%, 빨강 ${rate(cnt.red)}%`}>

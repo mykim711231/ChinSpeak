@@ -57,7 +57,7 @@ export const useSettingsStore = create<S>()(
       setTtsVoiceUri: (ttsVoiceUri) => set({ ttsVoiceUri }),
       level: 1,
       onboarded: false,
-      studySource: 'text',
+      studySource: 'dialog',
       setStudySource: (studySource) => set({ studySource }),
       autoDownload: true,
       setAutoDownload: (autoDownload) => set({ autoDownload }),
@@ -74,13 +74,15 @@ export const useSettingsStore = create<S>()(
     }),
     {
       name: 'chinspeak-settings',
-      version: 4,
+      version: 5,
       // 이전 단어/구/절 선택은 표시 여부만 유지한다. 나머지 사용자 설정은 보존한다.
       migrate: (old) => {
         const o = (old ?? {}) as Record<string, unknown>;
         const { large, showBreaks, breakLevel, ...rest } = o;
+        const source = rest.studySource === 'vocab' || rest.studySource === 'all' ? rest.studySource : 'dialog';
         return {
           ...rest,
+          studySource: source,
           fontSize: rest.fontSize ?? (large ? 'lg' : 'md'),
           showMeaningUnits: typeof rest.showMeaningUnits === 'boolean' ? rest.showMeaningUnits
             : typeof breakLevel === 'number' ? breakLevel > 0 : typeof showBreaks === 'boolean' ? showBreaks : true,

@@ -35,12 +35,19 @@ export default function ReviewPage() {
         if (!lesson) continue;
         for (const v of lesson.text) others.push({ verse: v, source: 'text' });
         for (const d of lesson.dialogs) for (const t of d.turns) others.push({ verse: t.verse as Verse, source: 'dialog', speaker: t.speaker });
+        for (const v of lesson.vocab) others.push({
+          verse: { zh: v.zh, pinyin: v.pinyin, ko: v.ko, chunks: [{ id: `${lesson.id}:vocab:${v.zh}`, zh: v.zh, pinyin: v.pinyin, ko: v.ko }] },
+          source: 'vocab',
+        });
         const text = lesson.text.find((v) => v.zh === c.zh);
         if (text) { out.push({ verse: text, source: 'text', lessonId: c.lessonId }); continue; }
-        for (const d of lesson.dialogs) {
-          const t = d.turns.find((turn) => turn.verse.zh === c.zh);
-          if (t) { out.push({ verse: t.verse as Verse, source: 'dialog', speaker: t.speaker, lessonId: c.lessonId }); break; }
-        }
+        const turn = lesson.dialogs.flatMap((d) => d.turns).find((t) => t.verse.zh === c.zh);
+        if (turn) { out.push({ verse: turn.verse as Verse, source: 'dialog', speaker: turn.speaker, lessonId: c.lessonId }); continue; }
+        const vocab = lesson.vocab.find((v) => v.zh === c.zh);
+        if (vocab) out.push({
+          verse: { zh: vocab.zh, pinyin: vocab.pinyin, ko: vocab.ko, chunks: [{ id: `${lesson.id}:vocab:${vocab.zh}`, zh: vocab.zh, pinyin: vocab.pinyin, ko: vocab.ko }] },
+          source: 'vocab', lessonId: c.lessonId,
+        });
       }
       if (active) { setExtra(others); setLines(out); }
     })();

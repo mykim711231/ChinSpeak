@@ -20,6 +20,8 @@ import { pendingKey, useReviewStore } from '../stores/useReviewStore';
 import { useHighlightStore } from '../stores/useHighlightStore';
 import { useShadowing, type ShadowingController } from '../hooks/useShadowing';
 import { usePlaybackFollow } from '../hooks/usePlaybackFollow';
+import { useStudySource } from '../hooks/useStudySource';
+import StudySourceSelector from '../components/StudySourceSelector';
 
 const STAGES = ['듣고 이해', '보고 떠올리기', '따라 말하기'] as const;
 type Face = 'ko' | 'zh';
@@ -27,7 +29,7 @@ type DeckResult = { correct: number; total: number };
 const btn = 'inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white text-sm font-semibold px-3 py-2 disabled:opacity-40';
 const btnBrand = 'inline-flex items-center gap-1.5 rounded-full bg-brand text-white text-sm font-semibold px-4 py-2 disabled:opacity-40';
 
-/** 선택한 본문 또는 회화 전체를 순서대로 1회 재생한다. */
+/** 선택한 대화 또는 표현 전체를 순서대로 1회 재생한다. */
 function usePlayAll(lines: StudyLine[]) {
   const [playing, setPlaying] = useState(-1);
   const token = useRef(0);
@@ -51,15 +53,14 @@ function usePlayAll(lines: StudyLine[]) {
   return { playing, play, stop };
 }
 
-/** 심화 학습은 본문+회화를 함께 다룬다. */
-const SOURCE: MasterySource = 'all';
-
+/** 심화 학습은 대화와 표현을 함께 다룬다. */
 export default function MasteryPage() {
   const { id = '' } = useParams();
-  return <MasteryContent key={id} id={id} source={SOURCE} />;
+  const { source, setSource } = useStudySource();
+  return <MasteryContent key={`${id}:${source}`} id={id} source={source} onSourceChange={setSource} />;
 }
 
-function MasteryContent({ id, source }: { id: string; source: MasterySource }) {
+function MasteryContent({ id, source, onSourceChange }: { id: string; source: MasterySource; onSourceChange: (source: MasterySource) => void }) {
   const [lesson, setLesson] = useState<Lesson | null | undefined>(undefined);
   const [stage, setStage] = useState(0);
   const kKey = pendingKey(id, source, 'ko');
@@ -130,7 +131,13 @@ function MasteryContent({ id, source }: { id: string; source: MasterySource }) {
 
       <LessonSelect label="과 선택" metas={metas} value={lesson.id} recId={recommendLesson(metas, prog, level)?.id} isDone={(id) => isUnlocked(prog, id)} onChange={(v) => { all.stop(); nav(`/lesson/${v}/mastery?source=${source}`); }} />
 
-      <p className="text-xs text-slate-500">{studyTargetText(source, lines.length)} · 3단계(듣고 이해 → 보고 떠올리기(한글/간체) → 따라 말하기)로 진행해요. 본문은 무작위, 회화는 순서대로 나와요.</p>
+      <StudySourceSelector value={source} lesson={lesson} onChange={(next) => {
+        if (next === source) return;
+        all.stop(); shadow.stopPlayback(); shadow.stopRecording();
+        onSourceChange(next);
+      }} />
+
+      <p className="text-xs text-slate-500">{studyTargetText(source, lines.length)} · 3단계(듣고 이해 → 보고 떠올리기(한글/간체) → 따라 말하기)로 진행해요. 대화는 순서대로, 표현은 무작위로 나와요.</p>
       {!lines.length && <p role="status" className="text-sm text-slate-500">등록된 {sourceLabel} 내용이 없어요. 다른 학습 내용을 선택해 주세요.</p>}
 
       <ol className="grid grid-cols-3 gap-1" aria-label="진행 단계">
@@ -260,7 +267,7 @@ function RecallStage({ face, lines, pending, intro, onGrade, onLater, onFinish }
   onLater: (later: { remaining: string[]; correct: number; total: number }) => void;
   onFinish: (r: { correct: number; total: number }) => void;
 }) {
-  // 본문은 무작위, 회화는 순서대로. 시작할 때 한 번만 정한다.
+  // 대화는 교재 순서, 표현은 무작위. 시작할 때 한 번만 정한다.
   const deckLines = useMemo(() => {
     const rest = pending ? new Set(pending.remaining) : null;
     return recallOrder(rest ? lines.filter((l) => rest.has(l.verse.zh)) : lines);

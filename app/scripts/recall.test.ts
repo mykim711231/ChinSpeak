@@ -77,12 +77,12 @@ test('퀴즈: 정답이 보기에 있고 보기는 서로 다르다', () => {
   assert.deepEqual(buildQuiz([line(1)]), []);
 });
 
-test('떠올리기 순서: 본문은 무작위, 회화는 순서 유지', () => {
-  const t = (n: number) => ({ ...line(n), source: 'text' as const });
+test('떠올리기 순서: 대화는 순서 유지, 표현은 무작위', () => {
   const d = (n: number) => ({ ...line(n), source: 'dialog' as const });
-  const out = recallOrder([t(1), t(2), t(3), t(4), d(5), d(6), d(7)]);
-  assert.deepEqual(out.slice(4).map((l) => l.verse.zh), ['句5', '句6', '句7']);
-  assert.deepEqual(new Set(out.slice(0, 4).map((l) => l.verse.zh)), new Set(['句1', '句2', '句3', '句4']));
+  const v = (n: number) => ({ ...line(n), source: 'vocab' as const });
+  const out = recallOrder([d(1), d(2), d(3), v(4), v(5), v(6), v(7)]);
+  assert.deepEqual(out.slice(0, 3).map((l) => l.verse.zh), ['句1', '句2', '句3']);
+  assert.deepEqual(new Set(out.slice(3).map((l) => l.verse.zh)), new Set(['句4', '句5', '句6', '句7']));
 });
 
 test('퀴즈: 간체 고르기는 정답이 같은 문장의 간체', () => {
