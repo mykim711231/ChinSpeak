@@ -5,16 +5,24 @@ import { useProgressStore } from '../stores/useProgressStore';
 import type { LessonMeta } from '../types/lesson';
 import Icon from '../components/Icon';
 
-const VOLS = Array.from({ length: 8 }, (_, i) => i + 1);
+const LEVELS = [1, 2, 3, 4] as const;
 
 export default function PathPage() {
   const [meta, setMeta] = useState<LessonMeta[]>([]);
   const [sp] = useSearchParams();
   const lv = Number(sp.get('lv'));
-  const [vol, setVol] = useState(lv >= 1 && lv <= 4 ? lv * 2 - 1 : 1);
+  const initialLevel = lv >= 1 && lv <= 4 ? lv : 1;
+  const [level, setLevel] = useState(initialLevel);
+  const [vol, setVol] = useState(initialLevel * 2 - 1);
   const done = useProgressStore((s) => s.done);
   useEffect(() => { void loadMeta().then(setMeta); }, []);
-  useEffect(() => { if (lv >= 1 && lv <= 4) setVol(lv * 2 - 1); }, [lv]);
+  useEffect(() => {
+    if (lv >= 1 && lv <= 4) {
+      setLevel(lv);
+      setVol(lv * 2 - 1);
+    }
+  }, [lv]);
+  const vols = [level * 2 - 1, level * 2];
   const rows = useMemo(() => meta.filter((m) => m.vol === vol), [meta, vol]);
   const count = rows.filter((m) => done[m.id]).length;
 
@@ -28,19 +36,35 @@ export default function PathPage() {
         <Link to="/" className="text-sm text-slate-500">홈</Link>
       </div>
 
-      <div className="grid grid-cols-4 gap-1.5" role="tablist" aria-label="권 선택">
-        {VOLS.map((v) => (
-          <button
-            key={v}
-            type="button"
-            role="tab"
-            aria-selected={v === vol}
-            onClick={() => setVol(v)}
-            className={`rounded-lg px-2 py-2 text-sm font-semibold ${v === vol ? 'bg-brand text-white' : 'bg-white border border-slate-200 text-slate-600'}`}
-          >
-            {v}권
-          </button>
-        ))}
+      <div className="space-y-2">
+        <div className="grid grid-cols-4 gap-1.5" role="tablist" aria-label="레벨 선택">
+          {LEVELS.map((n) => (
+            <button
+              key={n}
+              type="button"
+              role="tab"
+              aria-selected={n === level}
+              onClick={() => { setLevel(n); setVol(n * 2 - 1); }}
+              className={`rounded-lg px-2 py-2 text-sm font-semibold ${n === level ? 'bg-brand text-white' : 'bg-white border border-slate-200 text-slate-600'}`}
+            >
+              Lv.{n}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-1.5" role="tablist" aria-label="권 선택">
+          {vols.map((v) => (
+            <button
+              key={v}
+              type="button"
+              role="tab"
+              aria-selected={v === vol}
+              onClick={() => setVol(v)}
+              className={`rounded-lg px-2 py-2 text-sm font-semibold ${v === vol ? 'bg-brand text-white' : 'bg-white border border-slate-200 text-slate-600'}`}
+            >
+              {v}권
+            </button>
+          ))}
+        </div>
       </div>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex items-center justify-between gap-3">
