@@ -4,6 +4,7 @@ import type { StudySource } from '../types/lesson';
 
 export type FontSize = 'md' | 'lg' | 'xl';
 export type BlueLight = 0 | 1 | 2 | 3;
+export const VOICE_RATE_RANGE = { min: 0.6, max: 1.4, step: 0.05 };
 type Level = 1 | 2 | 3 | 4;
 type ToggleKey = 'showZh' | 'showPinyin' | 'showKo' | 'showMeaningUnits';
 
@@ -30,6 +31,14 @@ type S = {
   /** 데일리·편하게 듣기·마스터리에서 중국어 뒤에 한글 번역을 읽어 줌 */
   koVoice: boolean;
   setKoVoice: (v: boolean) => void;
+  lessonKoVoice: boolean;
+  koreanRate: number;
+  koreanVoiceUri: string | null;
+  setLessonKoVoice: (v: boolean) => void;
+  setKoreanRate: (v: number) => void;
+  setKoreanVoiceUri: (v: string | null) => void;
+  flashcardAutoPlay: boolean;
+  setFlashcardAutoPlay: (v: boolean) => void;
   /** 설치 안내 "다시 보지 않기"/닫은 시각(ms), 7일 후 재표시 */
   installDismissedAt: number;
   setOnboarded: (v: boolean) => void;
@@ -63,6 +72,14 @@ export const useSettingsStore = create<S>()(
       setAutoDownload: (autoDownload) => set({ autoDownload }),
       koVoice: false,
       setKoVoice: (koVoice) => set({ koVoice }),
+      lessonKoVoice: true,
+      koreanRate: 1,
+      koreanVoiceUri: null,
+      setLessonKoVoice: (lessonKoVoice) => set({ lessonKoVoice }),
+      setKoreanRate: (koreanRate) => set({ koreanRate }),
+      setKoreanVoiceUri: (koreanVoiceUri) => set({ koreanVoiceUri }),
+      flashcardAutoPlay: false,
+      setFlashcardAutoPlay: (flashcardAutoPlay) => set({ flashcardAutoPlay }),
       installDismissedAt: 0,
       setOnboarded: (onboarded) => set({ onboarded }),
       dismissInstall: () => set({ installDismissedAt: Date.now() }),

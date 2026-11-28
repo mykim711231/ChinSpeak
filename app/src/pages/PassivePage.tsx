@@ -87,7 +87,7 @@ export default function PassivePage() {
         if (useSettingsStore.getState().koVoice) {
           await new Promise((r) => setTimeout(r, 300));
           if (token.current !== my) return;
-          await playPassive(v.ko, 1, 'ko');
+          await playPassive(v.ko, undefined, 'ko');
           if (token.current !== my) return;
         }
         await new Promise((r) => setTimeout(r, 700));

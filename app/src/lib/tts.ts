@@ -51,7 +51,9 @@ function speakFallback(text: string, rate: number, done?: () => void, lang = 'zh
     return done?.();
   }
   const voices = window.speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().startsWith(lang.slice(0, 2)));
-  const selected = voices.find((v) => v.voiceURI === useSettingsStore.getState().ttsVoiceUri);
+  const { koreanVoiceUri, ttsVoiceUri } = useSettingsStore.getState();
+  const selectedUri = lang.startsWith('ko') ? koreanVoiceUri : ttsVoiceUri;
+  const selected = voices.find((v) => v.voiceURI === selectedUri);
   const available = navigator.onLine ? voices : voices.filter((v) => v.localService);
   const voice = selected && (navigator.onLine || selected.localService) ? selected
     : available.find((v) => v.lang.toLowerCase().replace('_', '-') === lang.toLowerCase() && v.localService)
@@ -61,19 +63,21 @@ function speakFallback(text: string, rate: number, done?: () => void, lang = 'zh
     return done?.();
   }
   const u = new SpeechSynthesisUtterance(lang.startsWith('zh') ? zhSpeech(text) : text);
-  u.lang = lang;
-  if (voice) u.voice = voice;
+  u.lang = voice.lang.replace('_', '-');
+  u.voice = voice;
   u.rate = rate;
   if (done) { u.onend = done; u.onerror = done; }
   window.speechSynthesis.speak(u);
 }
 
 /** 재생이 끝나거나(또는 stopSpeak 로 중단되면) resolve 된다. */
-export async function speakAsync(text: string, rate: number = useSettingsStore.getState().ttsRate, lang: 'zh' | 'ko' = 'zh'): Promise<void> {
+export async function speakAsync(text: string, rate?: number, lang: 'zh' | 'ko' = 'zh', forceDevice = false): Promise<void> {
+  const settings = useSettingsStore.getState();
+  const speed = rate ?? (lang === 'ko' ? settings.koreanRate : settings.ttsRate);
   stopSpeak();
   useOfflineStore.setState({ playbackError: null });
   const request = speechRequest;
-  const device = useSettingsStore.getState().voiceMode === 'device';
+  const device = forceDevice || settings.voiceMode === 'device';
   const url = device ? null : await (lang === 'ko' ? koMp3Url(text) : mp3Url(text));
   // 음원을 조회하는 동안 중단하거나 다른 재생을 시작했으면 이전 요청은 재생하지 않는다.
   if (request !== speechRequest) return;
@@ -87,11 +91,11 @@ export async function speakAsync(text: string, rate: number = useSettingsStore.g
       if (!device && !navigator.onLine) {
         useOfflineStore.setState({ playbackError: '저장된 녹음 음원을 재생하지 못했어요. 연결 후 음원 저장 상태를 확인해 주세요.' });
         finish();
-      } else speakFallback(fb, rate, finish, fl);
+      } else speakFallback(fb, speed, finish, fl);
     };
     if (!url) return fallback();
     const a = new Audio(url);
-    a.playbackRate = rate;
+    a.playbackRate = speed;
     audio = a;
     a.onended = () => { if (audio === a) audio = null; finish(); };
     a.onerror = () => { if (audio === a) { audio = null; fallback(); } };
@@ -104,10 +108,14 @@ export async function speakAsync(text: string, rate: number = useSettingsStore.g
   });
 }
 
+export function previewKoreanVoice() {
+  return speakAsync('안녕하세요. 한국어 음성의 속도를 확인해 보세요.', undefined, 'ko', true);
+}
+
 /** 설정에서 한글 음성이 켜져 있으면 번역을 읽는다. 꺼져 있으면 즉시 반환 */
 export async function speakKoIfOn(ko: string, rate?: number): Promise<void> {
   if (!useSettingsStore.getState().koVoice || !koSpeech(ko)) return;
-  await speakAsync(ko, rate ?? 1, 'ko');
+  await speakAsync(ko, rate, 'ko');
 }
 
 export async function speak(text: string, rate: number = useSettingsStore.getState().ttsRate) {
@@ -118,8 +126,9 @@ export async function speak(text: string, rate: number = useSettingsStore.getSta
 let passive: HTMLAudioElement | null = null;
 export const getPassiveAudio = () => (passive ??= new Audio());
 /** mp3 가 있으면 재생 후 true, 없으면 false (건너뛴다). 중단되면 true. */
-export async function playPassive(text: string, rate: number, lang: 'zh' | 'ko' = 'zh'): Promise<boolean> {
-  if (useSettingsStore.getState().voiceMode === 'device') {
+export async function playPassive(text: string, rate: number | undefined, lang: 'zh' | 'ko' = 'zh'): Promise<boolean> {
+  const settings = useSettingsStore.getState();
+  if (settings.voiceMode === 'device') {
     await speakAsync(text, rate, lang);
     return !useOfflineStore.getState().playbackError;
   }
@@ -130,7 +139,7 @@ export async function playPassive(text: string, rate: number, lang: 'zh' | 'ko' 
     a.onended = () => resolve(true);
     a.onerror = () => resolve(false);
     a.src = url;
-    a.playbackRate = rate;
+    a.playbackRate = rate ?? (lang === 'ko' ? settings.koreanRate : settings.ttsRate);
     a.play().catch(() => resolve(false));
     stopCurrent = () => resolve(true);
   });

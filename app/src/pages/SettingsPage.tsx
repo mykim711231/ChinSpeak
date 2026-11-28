@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cachedCount, cancelAudioDownloads, deleteVol, downloadVol, volUrls } from '../lib/offline';
 import { LEVEL_NAMES } from '../lib/contentLoader';
-import { useSettingsStore, type FontSize, type BlueLight } from '../stores/useSettingsStore';
-import { speak, stopSpeak, ttsSupported } from '../lib/tts';
+import { VOICE_RATE_RANGE, useSettingsStore, type FontSize, type BlueLight } from '../stores/useSettingsStore';
+import { previewKoreanVoice, speak, stopSpeak, ttsSupported } from '../lib/tts';
 import { pauseOfflineDownload } from '../lib/pwa';
 import { useOfflineStore } from '../stores/useOfflineStore';
 import OfflineStatus from '../components/OfflineStatus';
@@ -68,13 +68,18 @@ export default function SettingsPage() {
   const [toast, setToast] = useState<string | null>(null);
   const timer = useRef<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [deviceVoices, setDeviceVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const voices = deviceVoices.filter((voice) => /^zh/i.test(voice.lang));
+  const koreanVoices = deviceVoices.filter((voice) => /^ko/i.test(voice.lang));
   useEffect(() => {
     if (!ttsSupported()) return;
-    const update = () => setVoices(window.speechSynthesis.getVoices().filter((v) => /^zh/i.test(v.lang)));
+    const update = () => setDeviceVoices(window.speechSynthesis.getVoices());
     update();
     window.speechSynthesis.addEventListener('voiceschanged', update);
-    return () => window.speechSynthesis.removeEventListener('voiceschanged', update);
+    return () => {
+      window.speechSynthesis.removeEventListener('voiceschanged', update);
+      stopSpeak();
+    };
   }, []);
 
   const showToast = (t: string) => {
@@ -182,7 +187,16 @@ export default function SettingsPage() {
       </section>
 
       <section>
-        <SectionHeader title="음성 재생 방식" subtitle="기기 음성을 기본으로 사용해요. 녹음 음성은 저장한 mp3를 재생해요." />
+        <SectionHeader title="플래시카드" />
+        <Card>
+          <Row label="자동 음성 재생" description="카드가 바뀌면 자동으로 중국어 음성이 한 번 재생돼요.">
+            <Toggle label="자동 음성 재생" on={s.flashcardAutoPlay} onClick={() => s.setFlashcardAutoPlay(!s.flashcardAutoPlay)} />
+          </Row>
+        </Card>
+      </section>
+
+      <section>
+        <SectionHeader title="음성 재생 방식" subtitle="기기 음성 모드에서 브라우저가 제공하는 기기·온라인 음성을 선택할 수 있어요. 녹음 음성 모드는 MP3를 우선 재생해요." />
         <Card>
           <Row label="재생 방식" description="기기 음성을 오프라인에서 쓰려면 스마트폰에 중국어 음성팩이 설치되어 있어야 해요." stack>
             <Segmented<'device' | 'recorded'> value={s.voiceMode}
@@ -197,12 +211,9 @@ export default function SettingsPage() {
         <Card className="divide-y divide-slate-200">
           <Row label={`속도: ${s.ttsRate.toFixed(2)}×`} description="처음 배울 때는 0.80× 정도를 권해요.">
             <input
-              type="range" min={0.6} max={1.4} step={0.05} value={s.ttsRate} className="w-40" aria-label="음성 속도"
+              type="range" {...VOICE_RATE_RANGE} value={s.ttsRate} className="h-6 w-36 max-w-full accent-brand" aria-label="음성 속도"
               onChange={(e) => s.setTtsRate(Number(e.target.value))}
             />
-          </Row>
-          <Row label="한글 음성" description="10분 데일리·편하게 듣기·심화 학습에서 중국어 다음에 한글 번역을 읽어 줘요.">
-            <Toggle label="한글 음성" on={s.koVoice} onClick={() => { s.setKoVoice(!s.koVoice); showToast(s.koVoice ? '한글 음성을 껐어요.' : '한글 음성을 켰어요.'); }} />
           </Row>
           <Row label="속도 확인">
             <button type="button" className={pill} onClick={() => void speak('你好，欢迎学习中文。', s.ttsRate)}>
@@ -216,6 +227,37 @@ export default function SettingsPage() {
               <option value="">자동</option>
               {voices.map((v) => <option key={v.voiceURI} value={v.voiceURI}>{v.name} · {v.lang}{v.localService ? ' (기기)' : ' (온라인)'}</option>)}
             </select>
+          </Row>
+        </Card>
+      </section>
+
+
+      <section>
+        <SectionHeader title="한국어 뜻 읽기" />
+        <Card className="divide-y divide-slate-200">
+          <Row label="교재 전체 듣기" description="대화·핵심 문장·단어를 전체 듣기할 때 원문 뒤에 한국어 뜻을 읽어요.">
+            <Toggle label="교재 전체 듣기 한국어 뜻 읽기" on={s.lessonKoVoice} onClick={() => s.setLessonKoVoice(!s.lessonKoVoice)} />
+          </Row>
+          <Row label="10분 데일리·편하게 듣기·심화 학습" description="학습 중 한국어 뜻도 함께 들어요. 데일리의 따라 말하기 단계에서는 원문만 나와요.">
+            <Toggle label="학습 중 한국어 뜻 읽기" on={s.koVoice} onClick={() => s.setKoVoice(!s.koVoice)} />
+          </Row>
+          <Row label={`한국어 속도 ${s.koreanRate.toFixed(2)}×`} description="처음 배울 때는 0.80× 정도를 권해요.">
+            <input type="range" {...VOICE_RATE_RANGE} value={s.koreanRate} aria-label="한국어 속도" aria-valuetext={`${s.koreanRate.toFixed(2)}배`}
+              onChange={(event) => { stopSpeak(); s.setKoreanRate(event.currentTarget.valueAsNumber); }}
+              className="h-6 w-36 max-w-full accent-brand" />
+          </Row>
+          <Row label="한국어 음성 선택" stack description={koreanVoices.length ? '기기 음성으로 재생할 때 적용돼요.' : '목록이 비어 있으면 기기의 음성 설정에서 한국어 음성을 추가해 주세요.'}>
+            <select aria-label="한국어 음성 선택" value={s.koreanVoiceUri ?? ''}
+              onChange={(event) => { stopSpeak(); s.setKoreanVoiceUri(event.target.value || null); }}
+              className="w-full max-w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm sm:max-w-64">
+              <option value="">자동</option>
+              {koreanVoices.map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} · {voice.localService ? '기기' : '온라인'}</option>)}
+            </select>
+          </Row>
+          <Row label="기기 음성 확인">
+            <button type="button" className={pill} onClick={() => void previewKoreanVoice()}>
+              <Icon name="speaker" size={16} /> 한국어 미리 듣기
+            </button>
           </Row>
         </Card>
       </section>

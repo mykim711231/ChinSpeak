@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { speakAsync, stopSpeak } from '../lib/tts';
 import { LISTENING_PASSES, type ListeningPass } from '../lib/learningListening';
 import { useOfflineStore } from '../stores/useOfflineStore';
+import { useSettingsStore } from '../stores/useSettingsStore';
 import type { Verse } from '../types/lesson';
 
 /** 0..n-1 순서. shuffle 이면 섞되 원래 순서와 같아지지 않게 한다. */
@@ -52,10 +53,10 @@ export function useLessonPlayback(verses: Verse[], scope: string, passes: Listen
           const spent = Date.now() - startedAt;
           if (token.current !== my || useOfflineStore.getState().playbackError) return;
           // 한글 해설: 음원이 없으면 한국어 기기 음성으로 읽는다. 괄호 보충설명은 읽지 않는다.
-          if (opts.withKo && mode === 'once' && verses[index].ko) {
+          if (opts.withKo && mode === 'once' && useSettingsStore.getState().lessonKoVoice && verses[index].ko) {
             await new Promise((resolve) => setTimeout(resolve, 300));
             if (token.current !== my) return;
-            await speakAsync(verses[index].ko, 1, 'ko');
+            await speakAsync(verses[index].ko, undefined, 'ko');
             if (token.current !== my || useOfflineStore.getState().playbackError) return;
           }
           if (step < seq.length - 1 || pass < rounds - 1) {

@@ -4,6 +4,7 @@ import Icon from '../components/Icon';
 import { loadMeta, loadVol, loadVocabularyGroups } from '../lib/contentLoader';
 import { speakAsync, stopSpeak } from '../lib/tts';
 import { flashcardIsDue, useFlashcardStore } from '../stores/useFlashcardStore';
+import { useSettingsStore } from '../stores/useSettingsStore';
 import type { Lesson, LessonMeta, VocabularyGroup } from '../types/lesson';
 
 type Kind = 'word' | 'example' | 'phrase' | 'dialog';
@@ -52,7 +53,8 @@ export default function FlashcardsPage() {
   const [kind, setKind] = useState<Kind | 'all'>('all');
   const [deck, setDeck] = useState<'due' | 'all'>('due');
   const [direction, setDirection] = useState<'native' | 'ko' | 'mixed'>('native');
-  const [autoPlay, setAutoPlay] = useState(false);
+  const autoPlay = useSettingsStore((state) => state.flashcardAutoPlay);
+  const setAutoPlay = useSettingsStore((state) => state.setFlashcardAutoPlay);
   const [cards, setCards] = useState<Card[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [session, setSession] = useState<Card[]>([]);
@@ -167,7 +169,7 @@ export default function FlashcardsPage() {
         <button type="button" className={buttonClass(false)} aria-label="카드 방향 바꾸기" onClick={() => { setDirection(direction === 'native' ? 'ko' : direction === 'ko' ? 'mixed' : 'native'); setRevealed(false); }}>
           {direction === 'native' ? '중국어 → 한글' : direction === 'ko' ? '한글 → 중국어' : '혼합'}
         </button>
-        <button type="button" aria-pressed={autoPlay} onClick={() => setAutoPlay((on) => !on)} className={buttonClass(autoPlay)}>자동 듣기</button>
+        <button type="button" aria-pressed={autoPlay} onClick={() => setAutoPlay(!autoPlay)} className={buttonClass(autoPlay)}>자동 듣기</button>
       </div>
       <p className="text-xs text-slate-500" role="status">진행 {Math.min(cursor, session.length)}/{session.length} · 알았어요 {stats.known} · 다시 {stats.again}</p>
       {failed && <p className="text-sm text-slate-600">교재를 불러오지 못했어요. 연결 상태를 확인하고 다시 열어 주세요.</p>}
