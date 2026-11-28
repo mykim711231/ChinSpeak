@@ -68,7 +68,7 @@ export const useSettingsStore = create<S>()(
       showKo: true,
       showMeaningUnits: true,
       fontSize: 'md',
-      theme: 'system',
+      theme: 'light',
       keepAwake: false,
       ttsVolume: 1,
       wifiOnlyDownloads: false,
