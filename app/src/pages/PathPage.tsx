@@ -15,6 +15,8 @@ export default function PathPage() {
   const [level, setLevel] = useState(initialLevel);
   const [vol, setVol] = useState(initialLevel * 2 - 1);
   const done = useProgressStore((s) => s.done);
+  const markDone = useProgressStore((s) => s.markDone);
+  const markUndone = useProgressStore((s) => s.markUndone);
   useEffect(() => { void loadMeta().then(setMeta); }, []);
   useEffect(() => {
     if (lv >= 1 && lv <= 4) {
@@ -59,9 +61,10 @@ export default function PathPage() {
               role="tab"
               aria-selected={v === vol}
               onClick={() => setVol(v)}
-              className={`rounded-lg px-2 py-2 text-sm font-semibold ${v === vol ? 'bg-brand text-white' : 'bg-white border border-slate-200 text-slate-600'}`}
+              className={`rounded-xl border px-2 py-2 text-center ${v === vol ? 'border-brand bg-brand text-white' : 'border-slate-200 bg-white text-slate-700'}`}
             >
-              {v}권
+              <span className="block text-sm font-semibold">{v}권</span>
+              <span className={`block text-[10px] ${v === vol ? 'text-white/80' : 'text-slate-500'}`}>1~20과</span>
             </button>
           ))}
         </div>
@@ -75,21 +78,25 @@ export default function PathPage() {
         <span className="text-brand"><Icon name="map" size={26} /></span>
       </section>
 
-      <ul className="space-y-2">
+      <ul className="overflow-hidden rounded-2xl border border-slate-200 bg-white divide-y divide-slate-100">
         {rows.map((m) => {
           const isDone = !!done[m.id];
           return (
-            <li key={m.id}>
-              <Link to={`/lesson/${m.id}`} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
-                <span className={`grid h-9 w-9 flex-none place-items-center rounded-full text-xs font-bold ${isDone ? 'bg-brand text-white' : 'bg-slate-100 text-slate-500'}`}>
-                  {isDone ? <Icon name="check" size={16} /> : String(m.no).padStart(2, '0')}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold">{m.titleZh}</span>
-                  <span className="block truncate text-xs text-slate-500">{m.titleKo}</span>
-                </span>
-                <Icon name="chevronRight" size={18} className="text-slate-400" />
+            <li key={m.id} className="flex items-center">
+              <Link to={`/lesson/${m.id}`} className="min-w-0 flex-1 px-3 py-3">
+                <span className="block text-[11px] text-slate-400">{m.vol}권 {String(m.no).padStart(2, '0')}과</span>
+                <span className="mt-0.5 block truncate text-sm font-semibold">{m.titleKo}</span>
+                <span className="mt-0.5 block truncate text-xs text-slate-500">{m.titleZh} · {m.titlePinyin}</span>
               </Link>
+              <button
+                type="button"
+                aria-pressed={isDone}
+                aria-label={`${m.no}. ${m.titleKo}: ${isDone ? '미완료로 변경' : '완료로 표시'}`}
+                onClick={() => isDone ? markUndone(m.id) : markDone(m.id)}
+                className={`mr-3 grid h-7 w-7 flex-none place-items-center rounded-full border transition ${isDone ? 'border-brand bg-brand text-white' : 'border-slate-300 bg-white text-transparent hover:border-brand'}`}
+              >
+                <Icon name="check" size={14} />
+              </button>
             </li>
           );
         })}
