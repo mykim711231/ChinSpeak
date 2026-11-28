@@ -10,12 +10,21 @@ const PREFERRED = [
   'Kyoko', 'O-ren', 'Yuna', '유나', 'Tingting', 'Ting-Ting', 'Meijia', 'Mei-Jia',
 ];
 
-/** iOS가 같은 음성을 중복 반환하고 영어 novelty 음성을 섞어 반환하는 문제를 정리한다. */
+/** 같은 로캘의 대표 음성만 남긴다. ko-IN 같은 지역 변종과 중복·novelty 음성을 제외한다. */
 export function cleanVoices(voices: SpeechSynthesisVoice[], locale: string): SpeechSynthesisVoice[] {
-  const prefix = locale.toLowerCase().slice(0, 2);
+  const target = locale.toLowerCase().replace('_', '-');
+  const prefix = target.slice(0, 2);
+  const matches = (voice: SpeechSynthesisVoice) => {
+    const lang = voice.lang.toLowerCase().replace('_', '-');
+    if (target.includes('-')) {
+      if (lang === target || lang === prefix) return true;
+      return prefix === 'zh' && (lang === 'zh-hans' || lang.startsWith('zh-hans-'));
+    }
+    return lang === prefix || lang.startsWith(`${prefix}-`);
+  };
   const seen = new Set<string>();
   return voices
-    .filter((voice) => voice.lang.toLowerCase().replace('_', '-').startsWith(prefix))
+    .filter(matches)
     .filter((voice) => !NOVELTY.has(voice.name))
     .filter((voice) => {
       const key = `${voice.name}|${voice.lang}|${voice.localService}`;

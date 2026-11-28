@@ -72,8 +72,8 @@ export default function SettingsPage() {
   const timer = useRef<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [deviceVoices, setDeviceVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const voices = cleanVoices(deviceVoices, 'zh');
-  const koreanVoices = cleanVoices(deviceVoices, 'ko');
+  const voices = cleanVoices(deviceVoices, 'zh-CN');
+  const koreanVoices = cleanVoices(deviceVoices, 'ko-KR');
   useEffect(() => {
     if (!ttsSupported()) return;
     const update = () => setDeviceVoices(window.speechSynthesis.getVoices());
@@ -268,7 +268,7 @@ export default function SettingsPage() {
               onChange={(event) => { stopSpeak(); s.setKoreanVoiceUri(event.target.value || null); }}
               className="w-full max-w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm sm:max-w-64">
               <option value="">자동</option>
-              {koreanVoices.map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} · {voice.localService !== false ? '기기' : '온라인'}</option>)}
+              {koreanVoices.map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} · {voice.lang} · {voice.localService !== false ? '기기' : '온라인'}</option>)}
             </select>
           </Row>
           <Row label="음성 미리 듣기">
