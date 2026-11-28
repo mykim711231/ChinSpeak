@@ -224,7 +224,8 @@ export default function DailyPage() {
           <Icon name="award" size={40} className="mx-auto text-brand" />
           <h2 className="text-xl font-bold">오늘의 10분 완료!</h2>
           <p className="text-sm">연속 학습 <b>{streak}일</b> · <b>{lesson.no}. {lesson.titleZh}</b> 음원이 편하게 듣기에 해금되었어요.</p>
-          <div className="flex justify-center gap-2">
+          <div className="flex flex-wrap justify-center gap-2">
+            <button type="button" className={btn} onClick={start}><Icon name="repeat" size={14} /> 다시 시작</button>
             <Link to={`/passive?source=${source}`} className={btn}><Icon name="headphones" size={14} /> 편하게 듣기</Link>
             <Link to={`/lesson/${lesson.id}/mastery?source=${source}`} className={btn}><Icon name="target" size={14} /> 심화 학습으로 이어가기</Link>
           </div>
