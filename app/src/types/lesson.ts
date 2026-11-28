@@ -26,3 +26,5 @@ export type Lesson = {
   traps: Trap[]; grammar: GrammarPoint[]; dialogs: DialogSection[];
 };
 export type LessonMeta = Pick<Lesson, 'id' | 'vol' | 'no' | 'level' | 'titleZh' | 'titlePinyin' | 'titleKo'>;
+
+export type VocabularyGroup = { title: string; words: Vocab[] };

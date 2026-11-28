@@ -340,6 +340,6 @@ for (const [w, senses] of Object.entries(sensesData)) {
 }
 writeFileSync(join(OUT, 'word-dict.json'), JSON.stringify(dict));
 console.log(`dict: ${Object.keys(dict).length}`);
-writeVocabularyTopics(ROOT, meta);
+writeVocabularyTopics(ROOT, volumes.flat());
 writeFileSync(join(OUT, 'lessons-meta.json'), JSON.stringify(meta));
 console.log(`meta: ${meta.length}`);

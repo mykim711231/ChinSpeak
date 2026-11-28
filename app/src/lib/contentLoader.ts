@@ -1,4 +1,4 @@
-import type { Lesson, LessonMeta } from '../types/lesson';
+import type { Lesson, LessonMeta, VocabularyGroup } from '../types/lesson';
 const B = import.meta.env.BASE_URL;
 let metaP: Promise<LessonMeta[]> | null = null;
 const volCache = new Map<number, Promise<Lesson[]>>();
@@ -20,3 +20,10 @@ export const loadLesson = async (id: string) => {
 export const LEVEL_NAMES: Record<number, string> = {
   1: 'Lv.1 왕초보 귀 트이기', 2: 'Lv.2 중국어 벽 뚫기', 3: 'Lv.3 네이티브 리듬 정복', 4: 'Lv.4 프리토킹 마스터',
 };
+
+let vocabularyGroups: Promise<Record<string, VocabularyGroup[]>> | undefined;
+export async function loadVocabularyGroups(id: string): Promise<VocabularyGroup[]> {
+  vocabularyGroups ??= loadJson<Record<string, VocabularyGroup[]>>('vocabulary-groups.json')
+    .catch((error) => { vocabularyGroups = undefined; throw error; });
+  return (await vocabularyGroups)[id] ?? [];
+}

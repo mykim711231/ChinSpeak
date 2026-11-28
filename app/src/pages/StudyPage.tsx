@@ -91,6 +91,12 @@ export default function StudyPage() {
         <Icon name="arrowRight" size={18} className="text-slate-400" />
       </Link>
 
+      <Link to={sel ? `/flashcards?id=${sel}` : '/flashcards'} className={card}>
+        <Icon name="book" size={26} className="text-brand flex-none" />
+        <span className="min-w-0 flex-1"><b className="block">플래시카드</b><span className="block text-xs text-slate-500">단어·예문·핵심 문장·대화를 카드로 복습해요.</span></span>
+        <Icon name="arrowRight" size={18} className="text-slate-400" />
+      </Link>
+
       <div className="rounded-2xl border border-slate-200 bg-white p-4 flex items-center justify-between gap-3">
         <span className="min-w-0">
           <b className="block">한글 음성</b>

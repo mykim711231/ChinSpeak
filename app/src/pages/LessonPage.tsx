@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { vocabularyTopics } from '../lib/vocabularyTopics';
+import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { loadLesson, loadMeta, loadVol } from '../lib/contentLoader';
+import { loadLesson, loadMeta, loadVocabularyGroups } from '../lib/contentLoader';
 import { speak } from '../lib/tts';
 import ChunkCard from '../components/ChunkCard';
 import GrammarText from '../components/GrammarText';
@@ -12,7 +11,7 @@ import { useLessonPlayback } from '../hooks/useLessonPlayback';
 import { usePlaybackFollow } from '../hooks/usePlaybackFollow';
 import { DIALOG_PASSES, LISTENING_GUIDE, LISTENING_PASSES, VOCAB_GUIDE, VOCAB_PASSES } from '../lib/learningListening';
 import { isBasicMode } from '../lib/compatibility';
-import type { Lesson, LessonMeta, Vocab } from '../types/lesson';
+import type { Lesson, LessonMeta, Vocab, VocabularyGroup } from '../types/lesson';
 
 type Tab = 'basic' | 'applied' | 'pattern' | 'vocab' | 'memory' | 'notes';
 const TABS: [Tab, string][] = [
@@ -40,32 +39,25 @@ export default function LessonPage() {
   const focusTab = target?.[1] === 'dialog' ? dialogueTab : TABS.find(([key]) => key === (target?.[1] ?? requestedTab))?.[0] ?? 'basic';
   const [meta, setMeta] = useState<LessonMeta[]>([]);
   const [tab, setTab] = useState<Tab>(focusTab);
-  const [volumeLessons, setVolumeLessons] = useState<Lesson[]>([]);
-  const [topic, setTopic] = useState('');
+  const [loadedGroups, setLoadedGroups] = useState<{ id: string; groups: VocabularyGroup[] } | null>(null);
   const settings = useSettingsStore();
   const { showZh, showPinyin, showKo, showMeaningUnits, toggle } = settings;
   const { done, markDone, markUndone, setLast } = useProgressStore();
   const basic = isBasicMode();
-  const volume = lesson?.vol;
+  const loaded = loadedGroups?.id === id;
+  const memoryGroups = loaded ? loadedGroups.groups : [];
   useEffect(() => {
-    if (tab !== 'memory' || !volume) return;
+    if (tab !== 'memory' || !id || loaded) return;
     let active = true;
-    void loadVol(volume).then((lessons) => { if (active) setVolumeLessons(lessons); }, () => { if (active) setVolumeLessons([]); });
+    void loadVocabularyGroups(id).then(
+      (groups) => { if (active) setLoadedGroups({ id, groups }); },
+      () => { if (active) setLoadedGroups({ id, groups: [] }); },
+    );
     return () => { active = false; };
-  }, [tab, volume]);
+  }, [tab, id, loaded]);
 
   const vocabularyTab = tab === 'vocab' || tab === 'memory';
-  const memoryTopics = useMemo(() => {
-    if (!lesson || tab !== 'memory') return [];
-    const authored = lesson.related.flatMap((group, index) => {
-      const words: Vocab[] = group.rows.map((word) => ({ ...word, pos: '' }));
-      return words.length ? [{ id: `related-${index}`, title: group.title, words }] : [];
-    });
-    const groups = vocabularyTopics(lesson, volumeLessons.filter((row) => row.vol === lesson.vol), (word) => word.zh);
-    return [...authored, ...groups];
-  }, [lesson, tab, volumeLessons]);
-  const memoryTopic = memoryTopics.find((group) => group.id === topic) ?? memoryTopics[0];
-  const vocabulary = tab === 'memory' ? memoryTopic?.words ?? [] : lesson?.vocab ?? [];
+  const vocabulary = tab === 'memory' ? memoryGroups.flatMap((group) => group.words) : lesson?.vocab ?? [];
   const isDialogue = tab === 'basic' || tab === 'applied';
   const dialogues = tab === 'basic' ? lesson?.dialogs.slice(0, 1) ?? [] : tab === 'applied' ? lesson?.dialogs.slice(1) ?? [] : [];
   const dialogVerses = dialogues.flatMap((dialogue) => dialogue.turns.map((turn) => turn.verse));
@@ -73,7 +65,7 @@ export default function LessonPage() {
   const patternVerses = (lesson?.patterns ?? []).flatMap((p) => p.examples);
   const playableVerses = isDialogue ? dialogVerses : vocabularyTab ? vocabVerses : tab === 'pattern' ? patternVerses : [];
   const passList = vocabularyTab ? VOCAB_PASSES : isDialogue ? DIALOG_PASSES : LISTENING_PASSES;
-  const scope = `${id}:${tab}:${memoryTopic?.id ?? ''}`;
+  const scope = `${id}:${tab}`;
   const playback = useLessonPlayback(playableVerses, scope, passList);
   const { playing, step, pass, display, passLabel, completed, play, stop: stopAll } = playback;
   const learning = pass !== null;
@@ -109,7 +101,6 @@ export default function LessonPage() {
   useEffect(() => {
     let active = true;
     setLesson(undefined);
-    setTopic('');
     loadLesson(id).then((l) => {
       if (!active) return;
       setLesson(l ?? null);
@@ -135,6 +126,60 @@ export default function LessonPage() {
   const idx = meta.findIndex((m) => m.id === id);
   const prev = idx > 0 ? meta[idx - 1] : undefined;
   const next = idx >= 0 ? meta[idx + 1] : undefined;
+
+  const renderVocabulary = (words: Vocab[], start: number, label: string) => (
+      <ul className="space-y-2" aria-label={label}>
+        {words.map((v, row) => {
+        const i = start + row;
+        return (
+          <li
+            key={i}
+            {...location(tab === 'memory' ? 'memory' : 'vocab', i)}
+            data-playback-line={i}
+            aria-current={i === playing ? 'true' : undefined}
+            className={`${card} !p-3 ${i === playing ? 'ring-2 ring-brand' : ''}`}
+          >
+            <div className="flex items-start gap-2">
+              <button
+                type="button"
+                aria-label={`${v.zh} 듣기`}
+                onClick={() => { stopAll(); void speak(v.zh); }}
+                className="shrink-0 w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center"
+              >
+                <Icon name="speaker" size={16} />
+              </button>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-baseline gap-2">
+                  {caption.showZh && <span lang="zh-Hans" className="font-hanzi text-xl">{v.zh}</span>}
+                  {caption.showPinyin && <span lang="zh-Latn-pinyin" className="reading-pinyin text-sm">{v.pinyin}</span>}
+                  <span className="text-xs text-slate-500">{v.pos}</span>
+                </div>
+                {caption.showKo && <p className="text-sm text-slate-800 mt-0.5">{v.ko}</p>}
+                {v.hanjaNote && <p className="text-xs text-slate-500 mt-1">{v.hanjaNote}</p>}
+                {v.exZh && (caption.showZh || caption.showPinyin || caption.showKo) && (
+                  <div className="mt-2 rounded-lg bg-brand-50 px-2 py-2">
+                    <button
+                      type="button"
+                      aria-label="예문 듣기"
+                      onClick={() => { stopAll(); void speak(v.exZh!); }}
+                      className="float-right text-brand"
+                    >
+                      <Icon name="speaker" size={14} />
+                    </button>
+                    {caption.showZh && <span lang="zh-Hans" className="font-hanzi">{v.exZh}</span>}
+                    <div className="text-xs text-slate-500">
+                      {caption.showPinyin && <span lang="zh-Latn-pinyin" className="reading-pinyin">{v.exPinyin}</span>}
+                      {caption.showKo && v.exKo && <> · {v.exKo}</>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </li>
+          );
+        })}
+      </ul>
+  );
 
   return (
     <main ref={follow.readingRef} className="p-4 pb-24 space-y-4">
@@ -191,16 +236,8 @@ export default function LessonPage() {
         {playing >= 0 && (
           <span role="status" className="basis-full rounded-lg border border-brand bg-white px-3 py-1.5 text-xs text-brand">
             {learning ? `${(pass ?? 0) + 1}/${passCount}회 · ${passLabel} · ` : '재생 중 '}
-            {(learning ? step : playing) + 1}/{playableVerses.length}{vocabularyTab ? '단어' : '문장'}
+            {(learning ? step : playing) + 1}/{playableVerses.length}{tab === 'memory' ? '항목' : vocabularyTab ? '단어' : '문장'}
           </span>
-        )}
-        {tab === 'memory' && memoryTopics.length > 1 && memoryTopic && (
-          <label className="flex basis-full items-center gap-2 text-sm font-semibold">
-            묶음 주제
-            <select value={memoryTopic.id} onChange={(event) => { stopAll(); setTopic(event.target.value); }} className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm font-normal">
-              {memoryTopics.map((group) => <option key={group.id} value={group.id}>{group.title}</option>)}
-            </select>
-          </label>
         )}
       </div>
       {completed && <p role="status" className="text-sm text-brand">{passCount}회 학습 듣기를 마쳤어요. 기존 표시 설정으로 돌아왔어요.</p>}
@@ -269,57 +306,26 @@ export default function LessonPage() {
         </>
       )}
 
-      {vocabularyTab && vocabulary.length > 0 && (
+      {tab === 'vocab' && vocabulary.length > 0 && (
         <section>
-          <h2 className="font-bold text-sm text-brand mb-2">{tab === 'memory' ? memoryTopic?.title : '核心表达 · 주요 단어'}</h2>
-          <ul className="space-y-2">
-            {vocabulary.map((v, i) => (
-              <li
-                key={i}
-                {...location(tab, i)}
-                data-playback-line={i}
-                aria-current={i === playing ? 'true' : undefined}
-                className={`${card} !p-3 ${i === playing ? 'ring-2 ring-brand' : ''}`}
-              >
-                <div className="flex items-start gap-2">
-                  <button
-                    type="button"
-                    aria-label={`${v.zh} 듣기`}
-                    onClick={() => { if (learning) stopAll(); void speak(v.zh); }}
-                    className="shrink-0 w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center"
-                  >
-                    <Icon name="speaker" size={16} />
-                  </button>
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-baseline gap-2">
-                      {caption.showZh && <span lang="zh-Hans" className="font-hanzi text-xl">{v.zh}</span>}
-                      {caption.showPinyin && <span lang="zh-Latn-pinyin" className="reading-pinyin text-sm">{v.pinyin}</span>}
-                      <span className="text-xs text-slate-500">{v.pos}</span>
-                    </div>
-                    {caption.showKo && <p className="text-sm text-slate-800 mt-0.5">{v.ko}</p>}
-                    {v.hanjaNote && <p className="text-xs text-slate-500 mt-1">{v.hanjaNote}</p>}
-                    {v.exZh && (caption.showZh || caption.showPinyin || caption.showKo) && (
-                      <div className="mt-2 rounded-lg bg-brand-50 px-2 py-2">
-                        <button
-                          type="button"
-                          aria-label="예문 듣기"
-                          onClick={() => { if (learning) stopAll(); void speak(v.exZh!); }}
-                          className="float-right text-brand"
-                        >
-                          <Icon name="speaker" size={14} />
-                        </button>
-                        {caption.showZh && <span lang="zh-Hans" className="font-hanzi">{v.exZh}</span>}
-                        <div className="text-xs text-slate-500">
-                          {caption.showPinyin && <span lang="zh-Latn-pinyin" className="reading-pinyin">{v.exPinyin}</span>}
-                          {caption.showKo && v.exKo && <> · {v.exKo}</>}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <h2 className="mb-2 text-sm font-bold text-brand">주요 단어</h2>
+          {renderVocabulary(vocabulary, 0, '주요 단어')}
+        </section>
+      )}
+
+      {tab === 'memory' && (
+        <section className="space-y-4">
+          <header>
+            <h2 className="text-sm font-bold text-brand">묶음 단어</h2>
+            <p className="text-sm text-slate-600">{lesson.titleKo} · <span lang="zh-Hans">{lesson.titleZh}</span></p>
+          </header>
+          {memoryGroups.length === 0 && <p role="status" className="text-sm text-slate-600">{loaded ? '이 과의 묶음 단어를 불러오지 못했어요.' : '묶음 단어를 불러오는 중이에요.'}</p>}
+          {memoryGroups.map((group, groupIndex) => (
+            <section key={group.title} className="space-y-2">
+              <h3 className="text-sm font-semibold text-brand">{group.title} ({group.words.length})</h3>
+              {renderVocabulary(group.words, memoryGroups.slice(0, groupIndex).reduce((count, previous) => count + previous.words.length, 0), group.title)}
+            </section>
+          ))}
         </section>
       )}
 

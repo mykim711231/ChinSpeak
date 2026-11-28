@@ -10,7 +10,7 @@ const items = [
   { to: '/settings', label: '설정', icon: 'settings' },
 ];
 
-const STUDY = /^\/(study|daily|passive|review|lesson\/[^/]+\/(?:mastery|practice))/;
+const STUDY = /^\/(study|flashcards|daily|passive|review|lesson\/[^/]+\/(?:mastery|practice))/;
 
 export default function BottomNav() {
   const { pathname } = useLocation();

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import BottomNav from './components/BottomNav';
 import StudyPage from './pages/StudyPage';
+import FlashcardsPage from './pages/FlashcardsPage';
 import WordSheet from './components/WordSheet';
 import TopBar from './components/TopBar';
 import Footer from './components/Footer';
@@ -53,6 +54,7 @@ export default function App() {
         <Route path="/lesson/:id/mastery" element={basic ? <BasicModeUnavailable feature="심화 학습" /> : <MasteryPage />} />
         <Route path="/review" element={basic ? <BasicModeUnavailable feature="심화 학습 복습" /> : <ReviewPage />} />
         <Route path="/study" element={<StudyPage />} />
+        <Route path="/flashcards" element={<FlashcardsPage />} />
         <Route path="/daily" element={basic ? <BasicModeUnavailable feature="10분 데일리" /> : <DailyPage />} />
         <Route path="/passive" element={<PassivePage />} />
         <Route path="/search" element={<SearchPage />} />
