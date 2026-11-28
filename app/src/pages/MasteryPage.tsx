@@ -361,8 +361,8 @@ export function QuizRun({ face, lines, previous, onDone, max = 10, extra, redNot
       <button type="button" className={btnBrand} onClick={() => void speakAsync(lines[item.index].verse.zh)}><Icon name="speaker" size={16} /> 다시 듣기</button>
       <div className="space-y-2" role="group" aria-label={face === 'ko' ? '한글 뜻 선택' : '간체 선택'}>
         {item.options.map((o, i) => {
-          const state = chosen === null ? '' : i === item.answer ? 'border-green-500 bg-green-50' : i === chosen ? 'border-red-400 bg-red-50' : 'opacity-60';
-          return <button key={i} type="button" disabled={chosen !== null} onClick={() => pick(i)} className={`w-full text-left rounded-xl border px-3 py-3 text-sm bg-white border-slate-200 ${face === 'zh' ? 'font-hanzi text-xl' : ''} ${state}`} lang={face === 'zh' ? 'zh-Hans' : undefined}>{o}</button>;
+          const state = chosen === null ? 'border-slate-200 bg-white' : i === item.answer ? 'border-green-600 bg-green-50 ring-1 ring-green-500' : i === chosen ? 'border-red-500 bg-red-50 ring-1 ring-red-400' : 'border-slate-200 bg-white opacity-60';
+          return <button key={i} type="button" disabled={chosen !== null} onClick={() => pick(i)} className={`w-full text-left rounded-xl border px-3 py-3 text-sm ${face === 'zh' ? 'font-hanzi text-xl' : ''} ${state}`} lang={face === 'zh' ? 'zh-Hans' : undefined}>{o}</button>;
         })}
       </div>
       {chosen !== null && (
