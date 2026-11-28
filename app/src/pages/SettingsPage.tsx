@@ -215,7 +215,7 @@ export default function SettingsPage() {
               onChange={(e) => s.setTtsRate(Number(e.target.value))}
             />
           </Row>
-          <Row label="속도 확인">
+          <Row label="음성 미리 듣기">
             <button type="button" className={pill} onClick={() => void speak('你好，欢迎学习中文。', s.ttsRate)}>
               <Icon name="speaker" size={16} /> 들어보기
             </button>
@@ -254,7 +254,7 @@ export default function SettingsPage() {
               {koreanVoices.map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} · {voice.localService ? '기기' : '온라인'}</option>)}
             </select>
           </Row>
-          <Row label="기기 음성 확인">
+          <Row label="음성 미리 듣기">
             <button type="button" className={pill} onClick={() => void previewKoreanVoice()}>
               <Icon name="speaker" size={16} /> 한국어 미리 듣기
             </button>
