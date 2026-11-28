@@ -10,21 +10,24 @@ const PREFERRED = [
   'Kyoko', 'O-ren', 'Yuna', '유나', 'Tingting', 'Ting-Ting', 'Meijia', 'Mei-Jia',
 ];
 
-/** 같은 로캘의 대표 음성만 남긴다. ko-IN 같은 지역 변종과 중복·novelty 음성을 제외한다. */
+const normalize = (lang: string) => lang.toLowerCase().replace('_', '-');
+
+/** 같은 로캘의 대표 음성만 남긴다. 정확한 로캘이 없으면 같은 언어의 대체 음성을 쓴다. */
 export function cleanVoices(voices: SpeechSynthesisVoice[], locale: string): SpeechSynthesisVoice[] {
-  const target = locale.toLowerCase().replace('_', '-');
+  const target = normalize(locale);
   const prefix = target.slice(0, 2);
-  const matches = (voice: SpeechSynthesisVoice) => {
-    const lang = voice.lang.toLowerCase().replace('_', '-');
-    if (target.includes('-')) {
-      if (lang === target || lang === prefix) return true;
-      return prefix === 'zh' && (lang === 'zh-hans' || lang.startsWith('zh-hans-'));
-    }
-    return lang === prefix || lang.startsWith(`${prefix}-`);
-  };
+  const candidates = voices.filter((voice) => normalize(voice.lang).startsWith(prefix));
+  const exact = candidates.filter((voice) => {
+    const lang = normalize(voice.lang);
+    if (lang === target || lang === prefix) return true;
+    return prefix === 'zh' && (lang === 'zh-hans' || lang.startsWith('zh-hans-'));
+  });
+  const pool = exact.length
+    ? exact
+    : candidates.filter((voice) => !(prefix === 'ko' && /^ko-(in|kp)(-|$)/.test(normalize(voice.lang))))
+        .filter((voice) => prefix !== 'zh' || !/^zh-(hk|mo)(-|$)/.test(normalize(voice.lang)));
   const seen = new Set<string>();
-  return voices
-    .filter(matches)
+  return pool
     .filter((voice) => !NOVELTY.has(voice.name))
     .filter((voice) => {
       const key = `${voice.name}|${voice.lang}|${voice.localService}`;
