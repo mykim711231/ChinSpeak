@@ -1,10 +1,12 @@
-// 모든 콘텐츠 텍스트가 manifest + mp3 파일로 커버되는지 검증. 사용: npm run verify:tts [-- --vol 1]
+// 모든 콘텐츠 텍스트가 manifest + mp3 파일로 커버되는지 검증. 사용: npm run verify:tts -- 1 (또는 all, --vol 1)
 import { existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { collectKo, collectTexts, hashOf, koHashOf, loadLessons, readKoManifest, readManifest, TTS_DIR } from './tts-texts';
 
 const i = process.argv.indexOf('--vol');
-const vols = i >= 0 && process.argv[i + 1] !== 'all' ? [parseInt(process.argv[i + 1], 10)] : [1, 2, 3, 4, 5, 6, 7, 8];
+const positional = process.argv.slice(2).find(v => /^(all|\d+)$/.test(v));
+const volArg = i >= 0 ? process.argv[i + 1] : positional;
+const vols = volArg && volArg !== 'all' ? [parseInt(volArg, 10)] : [1, 2, 3, 4, 5, 6, 7, 8];
 const manifest = readManifest();
 const koManifest = readKoManifest();
 let bad = 0;

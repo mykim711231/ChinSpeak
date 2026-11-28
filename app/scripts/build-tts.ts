@@ -1,4 +1,4 @@
-// zh 텍스트 → mp3 사전 합성 (msedge-tts). 사용: npm run build:tts -- --vol 1   (또는 --vol all)
+// zh 텍스트 → mp3 사전 합성 (msedge-tts). 사용: npm run build:tts -- 1 (또는 all, --vol 1)
 // 빌드 타임에 1회만 합성하고 결과 mp3를 커밋한다. 이미 있는 파일은 건너뛴다.
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 import { existsSync, mkdirSync, writeFileSync, statSync } from 'node:fs';
@@ -11,7 +11,8 @@ const hashFn = KO ? koHashOf : hashOf;
 const collect = KO ? collectKo : collectTexts;
 const MAN_PATH = KO ? KO_MAN : MANIFEST;
 const arg = process.argv.indexOf('--vol');
-const volArg = arg >= 0 ? process.argv[arg + 1] : '1';
+const positional = process.argv.slice(2).find(v => /^(all|\d+)$/.test(v));
+const volArg = arg >= 0 ? process.argv[arg + 1] : positional ?? '1';
 const vols = volArg === 'all' ? [1, 2, 3, 4, 5, 6, 7, 8] : [parseInt(volArg, 10)];
 const limitIdx = process.argv.indexOf('--limit');
 const limit = limitIdx >= 0 ? parseInt(process.argv[limitIdx + 1], 10) : Infinity;
