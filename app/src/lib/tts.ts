@@ -51,7 +51,7 @@ function speakFallback(text: string, rate: number, done?: () => void, lang = 'zh
     return done?.();
   }
   const voices = window.speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().startsWith(lang.slice(0, 2)));
-  const { koreanVoiceUri, ttsVoiceUri } = useSettingsStore.getState();
+  const { koreanVoiceUri, ttsVoiceUri, ttsVolume } = useSettingsStore.getState();
   const selectedUri = lang.startsWith('ko') ? koreanVoiceUri : ttsVoiceUri;
   const selected = voices.find((v) => v.voiceURI === selectedUri);
   const available = navigator.onLine ? voices : voices.filter((v) => v.localService);
@@ -66,6 +66,7 @@ function speakFallback(text: string, rate: number, done?: () => void, lang = 'zh
   u.lang = voice.lang.replace('_', '-');
   u.voice = voice;
   u.rate = rate;
+  u.volume = ttsVolume;
   if (done) { u.onend = done; u.onerror = done; }
   window.speechSynthesis.speak(u);
 }
@@ -96,6 +97,7 @@ export async function speakAsync(text: string, rate?: number, lang: 'zh' | 'ko' 
     if (!url) return fallback();
     const a = new Audio(url);
     a.playbackRate = speed;
+    a.volume = settings.ttsVolume;
     audio = a;
     a.onended = () => { if (audio === a) audio = null; finish(); };
     a.onerror = () => { if (audio === a) { audio = null; fallback(); } };

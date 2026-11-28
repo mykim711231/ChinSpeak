@@ -13,6 +13,7 @@ import {
   exportBackup, importBackup, resetAllUserData, type StorageInfo,
 } from '../lib/storage';
 import { Card, Row, Toggle, Segmented, SectionHeader } from '../components/ui';
+import { THEMES } from '../stores/useSettingsStore';
 import Icon from '../components/Icon';
 import { isBasicMode } from '../lib/compatibility';
 
@@ -143,6 +144,13 @@ export default function SettingsPage() {
       <section>
         <SectionHeader title="화면" />
         <Card className="divide-y divide-slate-200">
+          <Row label="화면 테마" stack description="라이트·세피아·다크·시스템 중에서 고릅니다.">
+            <Segmented<string>
+              value={s.theme}
+              options={THEMES.map((value) => ({ v: value, l: value === 'light' ? '라이트' : value === 'sepia' ? '세피아' : value === 'dark' ? '다크' : '시스템' }))}
+              onChange={(value) => s.setTheme(value as typeof s.theme)}
+            />
+          </Row>
           <Row label="글자 크기" description="화면 전체의 글자 크기예요." stack>
             <Segmented<FontSize>
               value={s.fontSize}
@@ -168,6 +176,9 @@ export default function SettingsPage() {
               options={[{ v: '0', l: '끄기' }, { v: '1', l: '약하게' }, { v: '2', l: '보통' }, { v: '3', l: '강하게' }]}
               onChange={(v) => { s.setBlueLight(Number(v) as BlueLight); showToast(v === '0' ? '청색광 차단을 껐어요.' : '청색광 차단을 켰어요.'); }}
             />
+          </Row>
+          <Row label="재생 중 화면 꺼짐 방지" description="듣기 학습 중 화면이 자동으로 꺼지지 않게 해요.">
+            <Toggle label="화면 꺼짐 방지" on={s.keepAwake} onClick={() => s.setKeepAwake(!s.keepAwake)} />
           </Row>
         </Card>
       </section>
@@ -214,6 +225,10 @@ export default function SettingsPage() {
               type="range" {...VOICE_RATE_RANGE} value={s.ttsRate} className="h-6 w-36 max-w-full accent-brand" aria-label="음성 속도"
               onChange={(e) => s.setTtsRate(Number(e.target.value))}
             />
+          </Row>
+          <Row label={`TTS 음량: ${Math.round(s.ttsVolume * 100)}%`} description="기기 음성과 녹음 음성에 함께 적용돼요.">
+            <input type="range" min={0.3} max={1} step={0.05} value={s.ttsVolume} aria-label="TTS 음량"
+              onChange={(e) => s.setTtsVolume(Number(e.target.value))} className="h-6 w-36 max-w-full accent-brand" />
           </Row>
           <Row label="음성 미리 듣기">
             <button type="button" className={pill} onClick={() => void speak('你好，欢迎学习中文。', s.ttsRate)}>
@@ -283,6 +298,10 @@ export default function SettingsPage() {
           {s.voiceMode === 'recorded' ? <Row label="녹음 음원 자동 저장" description="녹음 음성을 사용할 때 전체 녹음 음원을 받아 두고, 중단되면 이어받아요. Wi-Fi 사용을 권장해요.">
             <Toggle label="녹음 음원 자동 저장" on={s.autoDownload} onClick={() => s.setAutoDownload(!s.autoDownload)} />
           </Row> : <Row label="녹음 음원 자동 저장" description="기기 음성 사용 중에는 받지 않아요. 녹음 음성을 선택하면 자동 저장을 설정할 수 있어요."><span className="text-sm text-slate-500">사용 안 함</span></Row>}
+          <Row label="Wi-Fi에서만 음원 받기" description="모바일 데이터 사용을 줄이고 Wi-Fi에서만 오프라인 음원을 받아요.">
+            <Toggle label="Wi-Fi에서만 음원 받기" on={s.wifiOnlyDownloads} onClick={() => s.setWifiOnlyDownloads(!s.wifiOnlyDownloads)} />
+          </Row>
+
         </Card>
         <SectionHeader title="권별 녹음 음원" subtitle="녹음 음성이 필요하면 받기를 눌러 원하는 권만 직접 저장할 수 있어요." />
         <Card className="divide-y divide-slate-200">

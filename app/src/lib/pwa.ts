@@ -20,8 +20,10 @@ function updateAvailable(): void {
 }
 
 function shouldDownloadAudio(): boolean {
-  const { voiceMode, autoDownload } = useSettingsStore.getState();
-  return voiceMode === 'recorded' && autoDownload;
+  const { voiceMode, autoDownload, wifiOnlyDownloads } = useSettingsStore.getState();
+  const connection = (navigator as Navigator & { connection?: { type?: string } }).connection;
+  const blocked = wifiOnlyDownloads && connection?.type === 'cellular';
+  return voiceMode === 'recorded' && autoDownload && !blocked;
 }
 
 export function resumeOfflineDownload(): Promise<void> {

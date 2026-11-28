@@ -28,6 +28,9 @@ import { BasicModeNotice, BasicModeUnavailable } from './components/BasicMode';
 export default function App() {
   const fontSize = useSettingsStore((s) => s.fontSize);
   const blueLight = useSettingsStore((s) => s.blueLight);
+  const theme = useSettingsStore((s) => s.theme);
+  const keepAwake = useSettingsStore((s) => s.keepAwake);
+
   const onboarded = useSettingsStore((s) => s.onboarded);
   const { pathname } = useLocation();
   const bare = pathname === '/onboarding';
@@ -38,6 +41,32 @@ export default function App() {
     if (blueLight) el.setAttribute('data-bluelight', String(blueLight));
     else el.removeAttribute('data-bluelight');
   }, [fontSize, blueLight]);
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const apply = () => { document.documentElement.dataset.theme = theme === 'system' ? (media.matches ? 'dark' : 'light') : theme; };
+    apply();
+    media.addEventListener('change', apply);
+    return () => media.removeEventListener('change', apply);
+  }, [theme]);
+  useEffect(() => {
+    if (!keepAwake || typeof navigator === 'undefined') return;
+    const wakeLock = (navigator as Navigator & { wakeLock?: { request: (type: 'screen') => Promise<{ release: () => Promise<void> }> } }).wakeLock;
+    if (!wakeLock) return;
+    let lock: { release: () => Promise<void> } | null = null;
+    let active = true;
+    const request = async () => {
+      if (!active || document.visibilityState !== 'visible') return;
+      try { lock = await wakeLock.request('screen'); } catch { /* unsupported */ }
+    };
+    void request();
+    const onVisibility = () => { if (document.visibilityState === 'visible') void request(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      active = false;
+      document.removeEventListener('visibilitychange', onVisibility);
+      void lock?.release().catch(() => undefined);
+    };
+  }, [keepAwake]);
   useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
   const home = onboarded ? <HomePage /> : <Navigate to="/onboarding" replace />;
   return (

@@ -4,6 +4,8 @@ import type { StudySource } from '../types/lesson';
 
 export type FontSize = 'md' | 'lg' | 'xl';
 export type BlueLight = 0 | 1 | 2 | 3;
+export const THEMES = ['light', 'sepia', 'dark', 'system'] as const;
+export type Theme = typeof THEMES[number];
 export const VOICE_RATE_RANGE = { min: 0.6, max: 1.4, step: 0.05 };
 type Level = 1 | 2 | 3 | 4;
 type ToggleKey = 'showZh' | 'showPinyin' | 'showKo' | 'showMeaningUnits';
@@ -15,6 +17,10 @@ type S = {
   /** 교재의 의미 단위 경계를 화면에 표시한다. 음성 재생과 무관하다. */
   showMeaningUnits: boolean;
   fontSize: FontSize;
+  theme: Theme;
+  keepAwake: boolean;
+  ttsVolume: number;
+  wifiOnlyDownloads: boolean;
   blueLight: BlueLight;
   ttsRate: number;
   voiceMode: 'device' | 'recorded';
@@ -46,6 +52,10 @@ type S = {
   toggle: (k: ToggleKey) => void;
   setLevel: (l: Level) => void;
   setFontSize: (f: FontSize) => void;
+  setTheme: (t: Theme) => void;
+  setKeepAwake: (v: boolean) => void;
+  setTtsVolume: (v: number) => void;
+  setWifiOnlyDownloads: (v: boolean) => void;
   setBlueLight: (b: BlueLight) => void;
   setTtsRate: (r: number) => void;
 };
@@ -58,6 +68,10 @@ export const useSettingsStore = create<S>()(
       showKo: true,
       showMeaningUnits: true,
       fontSize: 'md',
+      theme: 'system',
+      keepAwake: false,
+      ttsVolume: 1,
+      wifiOnlyDownloads: false,
       blueLight: 0,
       ttsRate: 1,
       voiceMode: 'device',
@@ -86,6 +100,10 @@ export const useSettingsStore = create<S>()(
       toggle: (k) => set((s) => ({ [k]: !s[k] }) as Partial<S>),
       setLevel: (level) => set({ level }),
       setFontSize: (fontSize) => set({ fontSize }),
+      setTheme: (theme) => set({ theme }),
+      setKeepAwake: (keepAwake) => set({ keepAwake }),
+      setTtsVolume: (ttsVolume) => set({ ttsVolume }),
+      setWifiOnlyDownloads: (wifiOnlyDownloads) => set({ wifiOnlyDownloads }),
       setBlueLight: (blueLight) => set({ blueLight }),
       setTtsRate: (ttsRate) => set({ ttsRate }),
     }),
