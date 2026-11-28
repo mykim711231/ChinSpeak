@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import pkg from './package.json';
 import { readFileSync } from 'node:fs';
+import tailwindcss from 'tailwindcss';
+import autoprefixer from 'autoprefixer';
 
 const audioFiles = new Set(['zh', 'ko'].flatMap((lang) => Object.values(
   JSON.parse(readFileSync(new URL(`./public/data/${lang}-tts-manifest.json`, import.meta.url), 'utf8')) as Record<string, string>,
@@ -10,6 +12,7 @@ const audioFiles = new Set(['zh', 'ko'].flatMap((lang) => Object.values(
 
 export default defineConfig({
   base: '/ChinSpeak/',
+  css: { postcss: { plugins: [tailwindcss(), autoprefixer()] } },
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __APP_BUILD__: JSON.stringify(process.env.GITHUB_SHA?.slice(0, 7) ?? `local-${new Date().toISOString().slice(0, 19)}`),

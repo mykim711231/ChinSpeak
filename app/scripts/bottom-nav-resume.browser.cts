@@ -1,3 +1,4 @@
+// @ts-nocheck
 // 복귀 이벤트와 오래된 메뉴 위치를 모의한다. 실기기의 합성/절전 버그 재현을 대신하지 않는다.
 // 다른 앱: node scripts/bottom-nav-resume.browser.cjs D:/_Git_PWA/SMCB/app/dist /SMCB/ /search
 const { chromium } = require('playwright-core');

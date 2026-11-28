@@ -1,3 +1,4 @@
+// @ts-nocheck
 // 기기 식별과 기능 제한을 모의한다. 실제 Android/WebAPK 구동 확인을 대신하지 않는다.
 const { chromium } = require('playwright-core');
 const assert = require('node:assert/strict');

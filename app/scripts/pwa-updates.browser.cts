@@ -1,3 +1,4 @@
+// @ts-nocheck
 // npm run test:pwa (처음에는 npx playwright-core install chromium)
 const { chromium } = require('playwright-core');
 const assert = require('node:assert/strict');

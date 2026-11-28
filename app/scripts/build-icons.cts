@@ -1,3 +1,4 @@
+// @ts-nocheck
 // 기존 SVG를 PNG로 변환한다. 생성한 파일을 커밋하므로 일반 빌드에는 브라우저가 필요 없다.
 const { chromium } = require('playwright-core');
 const fs = require('node:fs');
