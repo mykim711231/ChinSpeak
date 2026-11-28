@@ -3,6 +3,7 @@ import { useOfflineStore } from '../stores/useOfflineStore';
 import { useSettingsStore } from '../stores/useSettingsStore';
 
 const B = import.meta.env.BASE_URL;
+const CORE_CACHE = 'chinspeak-core-v1';
 const CORE = ['index.html', 'data/lessons-meta.json', 'data/word-dict.json',
   'data/zh-tts-manifest.json', 'data/ko-tts-manifest.json',
   ...Array.from({ length: 8 }, (_, i) => `data/lessons-vol${i + 1}.json`)];
@@ -74,17 +75,23 @@ function prepareOffline(): Promise<void> {
   preparing = (async () => {
     try {
       const urls = CORE.map((file) => new URL(`${B}${file}`, location.origin).href);
-      const missing = (await Promise.all(urls.map(async (url) =>
-        await caches.match(url, { ignoreSearch: true }) ? null : url))).filter((url): url is string => !!url);
-      if (missing.length) {
-        if (!navigator.onLine) throw new Error('offline');
-        await Promise.all(missing.map(async (url) => {
-          const response = await fetch(url);
-          if (!response.ok) throw new Error('download');
+      const cache = await caches.open(CORE_CACHE);
+      // 서비스 워커가 아직 페이지를 제어하지 않는 첫 실행에서도 자료를 확실히 저장한다.
+      // 온라인에서는 매번 최신 응답으로 갱신하고, 실패하면 기존 캐시로 계속 쓸 수 있게 한다.
+      if (!navigator.onLine) {
+        const missing = (await Promise.all(urls.map(async (url) => (await cache.match(url, { ignoreSearch: true })) ? null : url)))
+          .filter((url): url is string => !!url);
+        if (missing.length) throw new Error('offline');
+      } else {
+        await Promise.all(urls.map(async (url) => {
+          try {
+            const response = await fetch(url, { cache: 'no-store' });
+            if (!response.ok) throw new Error('download');
+            await cache.put(url, response.clone());
+          } catch (error) {
+            if (!(await cache.match(url, { ignoreSearch: true }))) throw error;
+          }
         }));
-        if ((await Promise.all(urls.map((url) => caches.match(url, { ignoreSearch: true })))).some((r) => !r)) {
-          throw new Error('cache');
-        }
       }
       await migrateAudioCache();
       useOfflineStore.setState({ core: 'ready' });
