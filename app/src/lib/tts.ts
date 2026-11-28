@@ -68,7 +68,19 @@ function speakFallback(text: string, rate: number, done?: () => void, lang = 'zh
   u.voice = voice;
   u.rate = rate;
   u.volume = ttsVolume;
-  if (done) { u.onend = done; u.onerror = done; }
+  let finished = false;
+  let started = false;
+  let watchdog: ReturnType<typeof setTimeout> | undefined;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    if (watchdog !== undefined) clearTimeout(watchdog);
+    done?.();
+  };
+  u.onstart = () => { started = true; if (watchdog !== undefined) clearTimeout(watchdog); };
+  u.onend = finish;
+  u.onerror = finish;
+  watchdog = setTimeout(() => { if (!started) finish(); }, 4000);
   window.speechSynthesis.speak(u);
 }
 
