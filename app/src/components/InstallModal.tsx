@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { isIOS, isInAppBrowser, isStandalone } from '../lib/inapp';
+import { isAndroid, isChrome, isIOS, isInAppBrowser, isStandalone, openInChromeUrl } from '../lib/inapp';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import Icon from './Icon';
 import { isBasicMode } from '../lib/compatibility';
@@ -13,6 +13,8 @@ export default function InstallModal() {
   const navigate = useNavigate();
   const { onboarded, installDismissedAt, dismissInstall } = useSettingsStore();
   const [evt, setEvt] = useState<BIPEvent | null>(null);
+  const chromeFirst = isAndroid() && !isChrome();
+  const appUrl = `${window.location.origin}${import.meta.env.BASE_URL}`;
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export default function InstallModal() {
     return () => window.removeEventListener('appinstalled', installed);
   }, []);
   useEffect(() => {
-    if (!eligible || !(evt || isIOS())) return;
+    if (!eligible || !(evt || isIOS() || chromeFirst)) return;
     const t = window.setTimeout(() => setOpen(true), 1200);
     return () => window.clearTimeout(t);
   }, [eligible, evt]);
@@ -36,6 +38,11 @@ export default function InstallModal() {
   if (!open) return null;
   const close = () => { dismissInstall(); setOpen(false); };
   const install = async () => {
+    if (chromeFirst) {
+      close();
+      window.location.href = openInChromeUrl(appUrl);
+      return;
+    }
     if (!evt) return;
     // 설정·학습 상세에서 설치하더라도 시작 화면은 홈으로 통일한다.
     navigate('/', { replace: true });
@@ -52,9 +59,9 @@ export default function InstallModal() {
           <h3 id="inst-title" className="text-lg font-bold">앱으로 설치하기</h3>
         </div>
         <p className="text-sm text-slate-700">교재·단어장은 자동으로 저장하고 새 버전도 자동으로 받아 둬요. 기기 음성을 오프라인에서 쓰려면 스마트폰에 중국어 음성팩이 필요해요.</p>
-        {evt && <p className="mt-2 text-xs text-slate-500">설치는 홈 화면 주소로 진행해요.</p>}
-        {evt ? (
-          <button type="button" onClick={() => void install()} className="w-full mt-4 rounded-full bg-brand text-white font-semibold py-3">설치</button>
+        {chromeFirst ? <p className="mt-2 text-xs text-slate-600">Chrome으로 이동한 뒤 설치를 눌러 주세요. Samsung Internet에 설치된 앱은 삭제해 주세요.</p> : evt && <p className="mt-2 text-xs text-slate-500">설치는 홈 화면 주소로 진행해요.</p>}
+        {evt || chromeFirst ? (
+          <button type="button" onClick={() => void install()} className="w-full mt-4 rounded-full bg-brand text-white font-semibold py-3">{chromeFirst ? 'Chrome에서 설치' : '설치'}</button>
         ) : (
           <ol className="mt-3 space-y-1 text-sm list-decimal pl-5">
             <li>Safari 하단의 <b>공유(↑)</b> 버튼을 누르세요.</li>
