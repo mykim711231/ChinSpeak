@@ -2,9 +2,14 @@ import type { Lesson, LessonMeta } from '../types/lesson';
 const B = import.meta.env.BASE_URL;
 let metaP: Promise<LessonMeta[]> | null = null;
 const volCache = new Map<number, Promise<Lesson[]>>();
-export const loadMeta = () => (metaP ??= fetch(`${B}data/lessons-meta.json`).then(r => r.json()));
+async function loadJson<T>(path: string): Promise<T> {
+  const response = await fetch(`${B}data/${path}`);
+  if (!response.ok) throw new Error(`Could not load ${path}`);
+  return response.json();
+}
+export const loadMeta = () => (metaP ??= loadJson<LessonMeta[]>('lessons-meta.json').catch((error) => { metaP = null; throw error; }));
 export const loadVol = (vol: number) => {
-  if (!volCache.has(vol)) volCache.set(vol, fetch(`${B}data/lessons-vol${vol}.json`).then(r => r.json()));
+  if (!volCache.has(vol)) volCache.set(vol, loadJson<Lesson[]>(`lessons-vol${vol}.json`).catch((error) => { volCache.delete(vol); throw error; }));
   return volCache.get(vol)!;
 };
 export const loadLesson = async (id: string) => {

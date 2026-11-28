@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { loadLesson, loadMeta } from '../lib/contentLoader';
+import { useEffect, useMemo, useState } from 'react';
+import { vocabularyTopics } from '../lib/vocabularyTopics';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { loadLesson, loadMeta, loadVol } from '../lib/contentLoader';
 import { speak } from '../lib/tts';
 import ChunkCard from '../components/ChunkCard';
 import GrammarText from '../components/GrammarText';
@@ -9,12 +10,16 @@ import { useSettingsStore } from '../stores/useSettingsStore';
 import { useProgressStore } from '../stores/useProgressStore';
 import { useLessonPlayback } from '../hooks/useLessonPlayback';
 import { usePlaybackFollow } from '../hooks/usePlaybackFollow';
-import { LISTENING_GUIDE, LISTENING_PASSES, VOCAB_GUIDE, VOCAB_PASSES } from '../lib/learningListening';
+import { DIALOG_PASSES, LISTENING_GUIDE, LISTENING_PASSES, VOCAB_GUIDE, VOCAB_PASSES } from '../lib/learningListening';
 import { isBasicMode } from '../lib/compatibility';
-import type { Lesson, LessonMeta } from '../types/lesson';
+import type { Lesson, LessonMeta, Vocab } from '../types/lesson';
 
-type Tab = 'dialog' | 'vocab' | 'pattern' | 'task';
-const TABS: [Tab, string][] = [['dialog', '대화'], ['pattern', '패턴'], ['vocab', '단어'], ['task', '롤플레이']];
+type Tab = 'basic' | 'applied' | 'pattern' | 'vocab' | 'memory' | 'notes';
+const TABS: [Tab, string][] = [
+  ['basic', '기본 대화'], ['applied', '응용 대화'], ['pattern', '핵심 문장'],
+  ['vocab', '주요 단어'], ['memory', '묶음 단어'], ['notes', '회화 노트'],
+];
+const TAB_LABELS = Object.fromEntries(TABS) as Record<Tab, string>;
 
 const chip = (on: boolean) =>
   `px-3 py-1 rounded-full text-sm border ${
@@ -25,30 +30,77 @@ const card = 'rounded-2xl border border-slate-200 bg-white p-4';
 
 export default function LessonPage() {
   const { id = '' } = useParams();
+  const [params] = useSearchParams();
+  const target = /^(dialog|pattern|vocab)-\d+$/.exec(params.get('focus') ?? '');
+  const focus = target?.[0];
   const [lesson, setLesson] = useState<Lesson | null | undefined>(undefined);
+  const basicTurns = lesson?.dialogs[0]?.turns.length ?? 0;
+  const dialogueTab = lesson?.id === id && lesson.dialogs.length > 1 && Number(focus?.split('-')[1]) >= basicTurns ? 'applied' : 'basic';
+  const requestedTab = params.get('tab') === 'task' ? 'notes' : params.get('tab');
+  const focusTab = target?.[1] === 'dialog' ? dialogueTab : TABS.find(([key]) => key === (target?.[1] ?? requestedTab))?.[0] ?? 'basic';
   const [meta, setMeta] = useState<LessonMeta[]>([]);
-  const [tab, setTab] = useState<Tab>('dialog');
+  const [tab, setTab] = useState<Tab>(focusTab);
+  const [volumeLessons, setVolumeLessons] = useState<Lesson[]>([]);
+  const [topic, setTopic] = useState('');
   const settings = useSettingsStore();
   const { showZh, showPinyin, showKo, showMeaningUnits, toggle } = settings;
-  const { markDone, setLast } = useProgressStore();
+  const { done, markDone, markUndone, setLast } = useProgressStore();
   const basic = isBasicMode();
-  const dialogVerses = lesson?.text ?? [];
-  const vocabVerses = (lesson?.vocab ?? []).map((v) => ({ zh: v.zh, pinyin: v.pinyin, ko: v.ko, chunks: [] }));
+  const volume = lesson?.vol;
+  useEffect(() => {
+    if (tab !== 'memory' || !volume) return;
+    let active = true;
+    void loadVol(volume).then((lessons) => { if (active) setVolumeLessons(lessons); }, () => { if (active) setVolumeLessons([]); });
+    return () => { active = false; };
+  }, [tab, volume]);
+
+  const vocabularyTab = tab === 'vocab' || tab === 'memory';
+  const memoryTopics = useMemo(() => {
+    if (!lesson || tab !== 'memory') return [];
+    const authored = lesson.related.flatMap((group, index) => {
+      const words: Vocab[] = group.rows.map((word) => ({ ...word, pos: '' }));
+      return words.length ? [{ id: `related-${index}`, title: group.title, words }] : [];
+    });
+    const groups = vocabularyTopics(lesson, volumeLessons.filter((row) => row.vol === lesson.vol), (word) => word.zh);
+    return [...authored, ...groups];
+  }, [lesson, tab, volumeLessons]);
+  const memoryTopic = memoryTopics.find((group) => group.id === topic) ?? memoryTopics[0];
+  const vocabulary = tab === 'memory' ? memoryTopic?.words ?? [] : lesson?.vocab ?? [];
+  const isDialogue = tab === 'basic' || tab === 'applied';
+  const dialogues = tab === 'basic' ? lesson?.dialogs.slice(0, 1) ?? [] : tab === 'applied' ? lesson?.dialogs.slice(1) ?? [] : [];
+  const dialogVerses = dialogues.flatMap((dialogue) => dialogue.turns.map((turn) => turn.verse));
+  const vocabVerses = vocabulary.map((v) => ({ zh: v.zh, pinyin: v.pinyin, ko: v.ko, chunks: [] }));
   const patternVerses = (lesson?.patterns ?? []).flatMap((p) => p.examples);
-  const playableVerses = tab === 'dialog' ? dialogVerses : tab === 'vocab' ? vocabVerses : tab === 'pattern' ? patternVerses : [];
-  const passList = tab === 'vocab' ? VOCAB_PASSES : LISTENING_PASSES;
-  const playback = useLessonPlayback(playableVerses, `${id}:${tab}`, passList);
+  const playableVerses = isDialogue ? dialogVerses : vocabularyTab ? vocabVerses : tab === 'pattern' ? patternVerses : [];
+  const passList = vocabularyTab ? VOCAB_PASSES : isDialogue ? DIALOG_PASSES : LISTENING_PASSES;
+  const scope = `${id}:${tab}:${memoryTopic?.id ?? ''}`;
+  const playback = useLessonPlayback(playableVerses, scope, passList);
   const { playing, step, pass, display, passLabel, completed, play, stop: stopAll } = playback;
   const learning = pass !== null;
-  const follow = usePlaybackFollow(playing, `${id}:${tab}`);
+  const follow = usePlaybackFollow(playing, scope, !!lesson);
   const caption = display ?? { showZh, showPinyin, showKo };
   const passCount = passList.length;
-  const tabLabel = tab === 'vocab' ? '단어' : tab === 'pattern' ? '패턴' : '대화';
+  const tabLabel = TAB_LABELS[tab];
   const selectTab = (next: Tab): void => {
     if (next === tab) return;
     stopAll();
     setTab(next);
   };
+  const location = (kind: 'dialog' | 'pattern' | 'vocab' | 'memory', index: number) => {
+    const key = `${kind}-${index}`;
+    return { id: `lesson-entry-${key}`, tabIndex: key === focus ? -1 : undefined };
+  };
+
+  useEffect(() => { stopAll(); setTab(focusTab); }, [id, focus, focusTab, stopAll]);
+  useEffect(() => {
+    if (!focus || lesson?.id !== id || tab !== focusTab) return;
+    const frame = requestAnimationFrame(() => {
+      const line = document.getElementById(`lesson-entry-${focus}`);
+      line?.focus({ preventScroll: true });
+      line?.scrollIntoView({ block: 'center' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focus, focusTab, id, lesson, tab]);
 
   useEffect(() => {
     void loadMeta().then(setMeta);
@@ -57,6 +109,7 @@ export default function LessonPage() {
   useEffect(() => {
     let active = true;
     setLesson(undefined);
+    setTopic('');
     loadLesson(id).then((l) => {
       if (!active) return;
       setLesson(l ?? null);
@@ -66,17 +119,6 @@ export default function LessonPage() {
       active = false;
     };
   }, [id, setLast]);
-
-  useEffect(() => {
-    if (!lesson) return;
-    const onScroll = () => {
-      const el = document.documentElement;
-      const max = el.scrollHeight - el.clientHeight;
-      if (max <= 0 || (el.scrollTop || window.scrollY) / max >= 0.7) markDone(lesson.id);
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [lesson, markDone]);
 
   if (lesson === undefined) return <main className="p-4">불러오는 중…</main>;
   if (lesson === null) {
@@ -110,7 +152,7 @@ export default function LessonPage() {
         </div>
       </header>
 
-      <div ref={follow.controlsRef} className="flex flex-wrap items-center gap-2" aria-label="듣기 설정">
+      <div ref={follow.controlsRef} role="group" aria-label="학습 도구" className="sticky z-20 flex flex-wrap items-center gap-2 bg-paper py-1">
         {!basic && (
           <Link to={`/daily?id=${lesson.id}`} className="inline-flex items-center gap-1.5 rounded-full bg-brand text-white text-sm font-semibold px-3 py-1">
             <Icon name="timer" size={14} /> 10분 데일리
@@ -121,7 +163,7 @@ export default function LessonPage() {
             <Icon name="target" size={14} /> 심화 학습
           </Link>
         )}
-        {tab !== 'task' && (
+        {tab !== 'notes' && playableVerses.length > 0 && (
           <button
             type="button"
             disabled={!playableVerses.length}
@@ -132,7 +174,7 @@ export default function LessonPage() {
             <Icon name={learning ? 'stop' : 'repeat'} size={14} /> {learning ? '학습 듣기 멈추기' : `${tabLabel} ${passCount}회 학습 듣기`}
           </button>
         )}
-        {tab !== 'task' && (
+        {tab !== 'notes' && playableVerses.length > 0 && (
           <button
             type="button"
             disabled={!playableVerses.length}
@@ -142,18 +184,30 @@ export default function LessonPage() {
             <Icon name={playing >= 0 && !learning ? 'stop' : 'play'} size={14} /> {playing >= 0 && !learning ? '멈추기' : `${tabLabel} 전체 듣기`}
           </button>
         )}
+        <button type="button" aria-pressed={!!done[id]} onClick={() => done[id] ? markUndone(id) : markDone(id)}
+          className={`ml-auto rounded-full border px-3 py-1 text-sm font-semibold ${done[id] ? 'border-brand bg-brand text-white' : 'border-brand text-brand'}`}>
+          {done[id] ? '완료됨' : '학습 완료'}
+        </button>
         {playing >= 0 && (
-          <span role="status" className="text-xs text-slate-500">
+          <span role="status" className="basis-full rounded-lg border border-brand bg-white px-3 py-1.5 text-xs text-brand">
             {learning ? `${(pass ?? 0) + 1}/${passCount}회 · ${passLabel} · ` : '재생 중 '}
-            {(learning ? step : playing) + 1}/{playableVerses.length}문장
+            {(learning ? step : playing) + 1}/{playableVerses.length}{vocabularyTab ? '단어' : '문장'}
           </span>
+        )}
+        {tab === 'memory' && memoryTopics.length > 1 && memoryTopic && (
+          <label className="flex basis-full items-center gap-2 text-sm font-semibold">
+            묶음 주제
+            <select value={memoryTopic.id} onChange={(event) => { stopAll(); setTopic(event.target.value); }} className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm font-normal">
+              {memoryTopics.map((group) => <option key={group.id} value={group.id}>{group.title}</option>)}
+            </select>
+          </label>
         )}
       </div>
       {completed && <p role="status" className="text-sm text-brand">{passCount}회 학습 듣기를 마쳤어요. 기존 표시 설정으로 돌아왔어요.</p>}
       <p className="text-xs text-slate-500">
-        {tab === 'task'
-          ? '롤플레이는 과업을 실제로 말해 보세요. 문장 듣기는 대화·패턴·단어 탭에서 사용할 수 있어요.'
-          : `${tab === 'vocab' ? VOCAB_GUIDE : LISTENING_GUIDE} 매회 선택한 ${tabLabel} 전체를 듣고, 종료하면 기존 표시 설정으로 돌아와요.`}
+        {tab === 'notes'
+          ? '회화 노트에서 상황에 맞는 말투를 확인하세요.'
+          : `${vocabularyTab ? VOCAB_GUIDE : LISTENING_GUIDE} 매회 선택한 ${tabLabel} 전체를 듣고, 종료하면 기존 표시 설정으로 돌아와요.`}
       </p>
 
       <div role="tablist" aria-label="레슨 영역" className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-slate-200">
@@ -178,9 +232,10 @@ export default function LessonPage() {
         <button type="button" aria-pressed={showMeaningUnits} className={chip(showMeaningUnits)} onClick={() => toggle('showMeaningUnits')}>의미단위</button>
       </div>
 
-      {tab === 'dialog' && (
+      {tab === 'applied' && !playableVerses.length && <p role="status" className="text-sm text-slate-600">이 과에는 응용 대화가 없어요.</p>}
+      {isDialogue && (
         <>
-          {lesson.situation.length > 0 && (
+          {tab === 'basic' && lesson.situation.length > 0 && (
             <section className={card}>
               <h2 className="font-bold text-sm text-brand mb-2">情景 · 상황</h2>
               <ul className="space-y-1 text-sm text-slate-700">
@@ -191,7 +246,7 @@ export default function LessonPage() {
 
           {(() => {
             let line = 0;
-            return lesson.dialogs.map((d, i) => (
+            return dialogues.map((d, i) => (
               <section key={i}>
                 <h2 className="font-bold text-sm text-brand mb-2">{d.title}</h2>
                 {d.turns.map((t, j) => {
@@ -199,6 +254,7 @@ export default function LessonPage() {
                   return (
                     <div
                       key={j}
+                      {...location('dialog', idx + (tab === 'applied' ? basicTurns : 0))}
                       data-playback-line={idx}
                       aria-current={idx === playing ? 'true' : undefined}
                       className={idx === playing ? 'ring-2 ring-brand rounded-xl' : ''}
@@ -213,13 +269,14 @@ export default function LessonPage() {
         </>
       )}
 
-      {tab === 'vocab' && lesson.vocab.length > 0 && (
+      {vocabularyTab && vocabulary.length > 0 && (
         <section>
-          <h2 className="font-bold text-sm text-brand mb-2">核心表达 · 핵심 단어</h2>
+          <h2 className="font-bold text-sm text-brand mb-2">{tab === 'memory' ? memoryTopic?.title : '核心表达 · 주요 단어'}</h2>
           <ul className="space-y-2">
-            {lesson.vocab.map((v, i) => (
+            {vocabulary.map((v, i) => (
               <li
                 key={i}
+                {...location(tab, i)}
                 data-playback-line={i}
                 aria-current={i === playing ? 'true' : undefined}
                 className={`${card} !p-3 ${i === playing ? 'ring-2 ring-brand' : ''}`}
@@ -284,6 +341,7 @@ export default function LessonPage() {
                       return (
                         <div
                           key={j}
+                          {...location('pattern', idx)}
                           data-playback-line={idx}
                           aria-current={idx === playing ? 'true' : undefined}
                           className={idx === playing ? 'ring-2 ring-brand rounded-xl' : ''}
@@ -300,25 +358,9 @@ export default function LessonPage() {
         </section>
       )}
 
-      {tab === 'task' && (
+      {tab === 'notes' && (
         <>
-          {lesson.tasks.length > 0 && (
-            <section>
-              <h2 className="font-bold text-sm text-brand mb-2">角色扮演 · 롤플레이</h2>
-              <div className="space-y-2">
-                {lesson.tasks.map((t, i) => (
-                  <article key={i} className={card}>
-                    <h3 className="font-semibold">{i + 1}. {t.title}</h3>
-                    <ul className="mt-2 space-y-1 text-sm text-slate-700">
-                      {t.lines.map((line, j) => (
-                        <li key={j}>· <GrammarText text={line.text} readings={line.readings} showPinyin={caption.showPinyin} /></li>
-                      ))}
-                    </ul>
-                  </article>
-                ))}
-              </div>
-            </section>
-          )}
+          <Link to={`/lesson/${lesson.id}/practice`} className="text-sm font-semibold text-brand underline">학습에서 롤플레이 연습하기</Link>
 
           {lesson.notes.length > 0 && (
             <section className={card}>

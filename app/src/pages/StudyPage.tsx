@@ -35,7 +35,7 @@ export default function StudyPage() {
   return (
     <main className="p-4 pb-28 space-y-3">
       <h1 className="text-xl font-bold">학습</h1>
-      <p className="text-sm text-slate-600">{basic ? '교재에서 대화·패턴·단어·롤플레이를 읽고, 편하게 듣기에서 학습 대상을 골라 들을 수 있어요.' : '학습할 과를 고르고 원하는 학습을 시작하세요. 학습 대상(대화/패턴)은 각 학습 화면에서 고를 수 있어요.'}</p>
+      <p className="text-sm text-slate-600">{basic ? '교재에서 대화·핵심 문장·단어를 읽고, 편하게 듣기에서 학습 대상을 골라 들을 수 있어요.' : '학습할 과를 고르고 원하는 학습을 시작하세요. 학습 대상(대화/패턴)은 각 학습 화면에서 고를 수 있어요.'}</p>
       <LessonSelect label="학습할 과" metas={meta} value={sel} onChange={setPick} recId={rec?.id} isDone={basic ? undefined : (id) => isUnlocked(prog, id)} />
 
       {basic ? (
@@ -63,16 +63,25 @@ export default function StudyPage() {
         <Icon name="arrowRight" size={18} className="text-slate-400" />
       </Link>
 
-      <Link to="/review" className={card}>
+      </>}
+      <Link to={sel ? `/lesson/${sel}/practice` : '/path'} className={card}>
+        <Icon name="repeat" size={26} className="text-brand flex-none" />
+        <span className="min-w-0 flex-1">
+          <b className="block">롤플레이 연습</b>
+          <span className="block text-xs text-slate-500">과별 상황과 필수 표현을 확인하고 역할을 맡아 말해요.</span>
+        </span>
+        <Icon name="arrowRight" size={18} className="text-slate-400" />
+      </Link>
+
+      {!basic && <Link to="/review" className={card}>
         <Icon name="repeat" size={26} className="text-brand flex-none" />
         <span className="min-w-0 flex-1">
           <b className="block">심화 학습 복습{dueCount ? ` (${dueCount}장)` : ''}</b>
           <span className="block text-xs text-slate-500">{dueCount ? '심화 학습에서 못한 문장을 다시 확인해요.' : '못한 문장이 생기면 여기서 언제든 복습해요.'}</span>
         </span>
         <Icon name="arrowRight" size={18} className="text-slate-400" />
-      </Link>
+      </Link>}
 
-      </>}
       <Link to={`/passive?source=${source}`} className={card}>
         <Icon name="headphones" size={26} className="text-brand flex-none" />
         <span className="min-w-0 flex-1">

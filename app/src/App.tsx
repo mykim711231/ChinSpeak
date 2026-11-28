@@ -8,10 +8,12 @@ import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
 import PathPage from './pages/PathPage';
 import LessonPage from './pages/LessonPage';
+import PracticePage from './pages/PracticePage';
 import MasteryPage from './pages/MasteryPage';
 import ReviewPage from './pages/ReviewPage';
 import DailyPage from './pages/DailyPage';
 import PassivePage from './pages/PassivePage';
+import SearchPage from './pages/SearchPage';
 import OnboardingPage from './pages/OnboardingPage';
 import SettingsPage from './pages/SettingsPage';
 import AboutPage from './pages/AboutPage';
@@ -47,11 +49,13 @@ export default function App() {
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/path" element={<PathPage />} />
         <Route path="/lesson/:id" element={<LessonPage />} />
+        <Route path="/lesson/:id/practice" element={<PracticePage />} />
         <Route path="/lesson/:id/mastery" element={basic ? <BasicModeUnavailable feature="심화 학습" /> : <MasteryPage />} />
         <Route path="/review" element={basic ? <BasicModeUnavailable feature="심화 학습 복습" /> : <ReviewPage />} />
         <Route path="/study" element={<StudyPage />} />
         <Route path="/daily" element={basic ? <BasicModeUnavailable feature="10분 데일리" /> : <DailyPage />} />
         <Route path="/passive" element={<PassivePage />} />
+        <Route path="/search" element={<SearchPage />} />
         <Route path="/help" element={<HelpPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/settings/about" element={<AboutPage />} />

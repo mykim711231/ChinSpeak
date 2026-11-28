@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 /** 현재 문장이 메뉴 뒤로 가려질 때만 이동한다. 포커스와 사용자의 동작 줄이기 설정을 유지한다. */
-export function usePlaybackFollow(index: number, scope: string) {
+export function usePlaybackFollow(index: number, scope: string, ready = true) {
   const readingRef = useRef<HTMLElement>(null);
   const controlsRef = useRef<HTMLDivElement>(null);
 
@@ -14,7 +14,7 @@ export function usePlaybackFollow(index: number, scope: string) {
     const observer = new ResizeObserver(position);
     observer.observe(header);
     return () => observer.disconnect();
-  }, [scope]);
+  }, [scope, ready]);
 
   useEffect(() => {
     if (index < 0) return;

@@ -1,5 +1,6 @@
 // Doc/Markdown/vol*/*.md → public/data/lessons-vol{n}.json + lessons-meta.json
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync } from 'node:fs';
+import { writeVocabularyTopics } from './vocabulary-topics';
 import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -339,5 +340,6 @@ for (const [w, senses] of Object.entries(sensesData)) {
 }
 writeFileSync(join(OUT, 'word-dict.json'), JSON.stringify(dict));
 console.log(`dict: ${Object.keys(dict).length}`);
+writeVocabularyTopics(ROOT, meta);
 writeFileSync(join(OUT, 'lessons-meta.json'), JSON.stringify(meta));
 console.log(`meta: ${meta.length}`);
