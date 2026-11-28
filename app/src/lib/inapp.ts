@@ -16,3 +16,6 @@ export const isStandalone = () =>
   typeof window !== 'undefined' &&
   (window.matchMedia('(display-mode: standalone)').matches ||
     (navigator as Navigator & { standalone?: boolean }).standalone === true);
+
+export const isAndroid = () => typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+export const isSamsungBrowser = () => typeof navigator !== 'undefined' && /SamsungBrowser/i.test(navigator.userAgent);

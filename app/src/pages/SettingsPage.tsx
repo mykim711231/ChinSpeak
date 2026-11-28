@@ -17,7 +17,7 @@ import { THEMES } from '../stores/useSettingsStore';
 import Icon from '../components/Icon';
 import { isBasicMode } from '../lib/compatibility';
 import { isIOS } from '../lib/inapp';
-import { cleanVoices } from '../lib/voiceList';
+import { cleanVoices, watchVoices } from '../lib/voiceList';
 
 const pill = 'inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white text-sm font-semibold px-3 py-2';
 
@@ -77,10 +77,9 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!ttsSupported()) return;
     const update = () => setDeviceVoices(window.speechSynthesis.getVoices());
-    update();
-    window.speechSynthesis.addEventListener('voiceschanged', update);
+    const stopVoices = watchVoices(update);
     return () => {
-      window.speechSynthesis.removeEventListener('voiceschanged', update);
+      stopVoices();
       stopSpeak();
     };
   }, []);
@@ -242,7 +241,7 @@ export default function SettingsPage() {
               onChange={(e) => { stopSpeak(); s.setTtsVoiceUri(e.target.value || null); }}
               className="w-full max-w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm disabled:opacity-40 sm:max-w-64">
               <option value="">자동</option>
-              {voices.map((v) => <option key={v.voiceURI} value={v.voiceURI}>{v.name} · {v.lang}{v.localService !== false ? ' (기기)' : ' (온라인)'}</option>)}
+              {voices.map((v) => <option key={v.voiceURI} value={v.voiceURI}>{v.name} · {v.lang}{v.localService === false ? ' · 온라인' : ''}</option>)}
             </select>
           </Row>
         </Card>
@@ -268,7 +267,7 @@ export default function SettingsPage() {
               onChange={(event) => { stopSpeak(); s.setKoreanVoiceUri(event.target.value || null); }}
               className="w-full max-w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm sm:max-w-64">
               <option value="">자동</option>
-              {koreanVoices.map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} · {voice.lang} · {voice.localService !== false ? '기기' : '온라인'}</option>)}
+              {koreanVoices.map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} · {voice.lang}{voice.localService === false ? ' · 온라인' : ''}</option>)}
             </select>
           </Row>
           <Row label="음성 미리 듣기">

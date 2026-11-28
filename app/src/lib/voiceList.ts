@@ -42,3 +42,20 @@ export function cleanVoices(voices: SpeechSynthesisVoice[], locale: string): Spe
       return a.name.localeCompare(b.name);
     });
 }
+
+/** Android Chrome first getVoices() can be empty. Poll briefly and listen for changes. */
+export function watchVoices(update: () => void): () => void {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return () => undefined;
+  let stopped = false;
+  const run = () => { if (!stopped) update(); };
+  const timer = window.setInterval(run, 500);
+  const stopTimer = window.setTimeout(() => window.clearInterval(timer), 8000);
+  window.speechSynthesis.addEventListener('voiceschanged', run);
+  update();
+  return () => {
+    stopped = true;
+    window.clearInterval(timer);
+    window.clearTimeout(stopTimer);
+    window.speechSynthesis.removeEventListener('voiceschanged', run);
+  };
+}
