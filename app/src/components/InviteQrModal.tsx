@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { openInChromeUrl } from '../lib/inapp';
+import { openInChromeUrl, chromeQrUrl } from '../lib/inapp';
 import { QRCodeSVG } from 'qrcode.react';
 import Icon from './Icon';
 
@@ -30,10 +30,10 @@ export default function InviteQrModal({ url, onClose }: { url: string; onClose: 
           <h3 id="qr-title" className="text-xl font-bold">QR 코드로 공유하기</h3>
           <button type="button" onClick={onClose} aria-label="닫기" className="p-1 text-slate-500"><Icon name="x" size={24} /></button>
         </div>
-        <p className="font-semibold">휴대폰 카메라로 아래 그림을 비추면 ChinSpeak가 열려요.</p>
+        <p className="font-semibold">휴대폰 카메라로 아래 그림을 비추면 ChinSpeak가 열려요. Android에서는 Chrome으로 열리고, iPhone은 기본 브라우저로 열려요.</p>
         <div className="mt-4 flex justify-center">
           <div className="bg-white rounded-2xl p-4 border border-slate-200">
-            <QRCodeSVG value={url} size={224} level="M" marginSize={2} bgColor="#FFFFFF" fgColor="#000000" title="ChinSpeak 주소" />
+            <QRCodeSVG value={chromeQrUrl(url)} size={224} level="M" marginSize={2} bgColor="#FFFFFF" fgColor="#000000" title="ChinSpeak 주소" />
           </div>
         </div>
         <ol className="mt-5 space-y-2 text-sm">

@@ -32,3 +32,28 @@ export function openInChromeUrl(url: string): string {
     return url;
   }
 }
+
+export const isChrome = () =>
+  typeof navigator !== 'undefined' && /Chrome\//i.test(navigator.userAgent) &&
+  !/SamsungBrowser|Edg\/|OPR\/|CriOS/i.test(navigator.userAgent);
+
+/** QR로 들어온 Android 비Chrome 브라우저를 Chrome으로 한 번 전환한다. */
+export function maybeOpenInChrome(): void {
+  if (typeof window === 'undefined' || !isAndroid() || isChrome()) return;
+  if (new URLSearchParams(window.location.search).get('openInChrome') !== '1') return;
+  if (window.matchMedia?.('(display-mode: standalone)').matches) return;
+  const clean = new URL(window.location.href);
+  clean.searchParams.delete('openInChrome');
+  window.location.replace(openInChromeUrl(clean.href));
+}
+
+/** QR에 넣을 Chrome 전환용 주소. */
+export function chromeQrUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    parsed.searchParams.set('openInChrome', '1');
+    return parsed.href;
+  } catch {
+    return url;
+  }
+}

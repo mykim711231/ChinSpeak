@@ -5,7 +5,9 @@ import App from './App';
 import './index.css';
 import { startOfflineFeatures } from './lib/pwa';
 import { useOfflineStore } from './stores/useOfflineStore';
-import { isStandalone } from './lib/inapp';
+import { isStandalone, maybeOpenInChrome } from './lib/inapp';
+
+maybeOpenInChrome();
 
 // 예전 설치 바로가기·업데이트가 설정 주소를 기억해도 설치 앱의 새 실행은 홈에서 시작한다.
 // 이미 실행된 앱의 설정 이동과 학습 화면 딥링크는 그대로 둔다.
