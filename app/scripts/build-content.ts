@@ -14,7 +14,7 @@ const jieba = Jieba.withDict(jiebaDict);
 const USER_WORDS = [
   // 인사말·숙어
   '早上好', '下午好', '晚上好', '明天见', '好久不见', '多多关照', '欢迎光临', '不客气', '不用谢', '没关系', '对不起',
-  '没问题', '听起来',
+  '没问题', '听起来', '需要', '问题', '改签', '包间', '改签费', '包间费',
   // 요일 (일관성)
   '星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日', '星期天',
   // 인명·직함
@@ -88,21 +88,18 @@ function makeVerse(lessonId: string, zh: string, pinyin: string, ko: string): Ve
   return { zh: zh.replace(/／/g, ''), pinyin: pinyin.replace(/／/g, ''), ko: ko.replace(/／/g, ''), chunks, words: seg.words, phrases: seg.phrases };
 }
 
-/** 한자 문장 + 단어 단위 병음 → 단어 목록. 병음 띄어쓰기를 단어 경계로 사용한다. */
+/** 한자 문장을 jieba 단어 단위로 나누고, 병음 음절을 한자 수에 맞춰 붙인다. */
 function extractWords(zh: string, pinyin: string): { zh: string; py: string }[] {
   const out: { zh: string; py: string }[] = [];
-  const zhChars = [...zh.replace(/／/g, '')];
-  let hi = 0;
-  for (const tok of pinyin.replace(/／/g, ' ').trim().split(/\s+/).filter(Boolean)) {
-    const syl = splitSyllables(tok);
-    if (!syl.length) continue;
-    let w = '';
-    let taken = 0;
-    while (hi < zhChars.length && taken < syl.length) {
-      const c = zhChars[hi++];
-      if (/[\u4e00-\u9fff]/.test(c)) { w += c; taken++; }
-    }
-    if (w) out.push({ zh: w, py: syl.join('') });
+  const cleanZh = zh.replace(/／/g, '');
+  const syl = splitSyllables(pinyin.replace(/／/g, ' '));
+  let pi = 0;
+  for (const t of jieba.tag(cleanZh) as { word: string }[]) {
+    const han = [...t.word].filter((c) => /[\u4e00-\u9fff]/.test(c)).length;
+    if (!han) continue;
+    const py = syl.slice(pi, pi + han).join('');
+    pi += han;
+    if (!out.some((w) => w.zh === t.word)) out.push({ zh: t.word, py });
   }
   return out;
 }
