@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { openInChromeUrl } from '../lib/inapp';
 import { QRCodeSVG } from 'qrcode.react';
 import Icon from './Icon';
 
@@ -50,6 +51,8 @@ export default function InviteQrModal({ url, onClose }: { url: string; onClose: 
             {copied ? '복사했어요' : '주소 복사'}
           </button>
         </div>
+        <a href={openInChromeUrl(url)} className="mt-4 block w-full rounded-full border border-brand px-3 py-2 text-center text-sm font-semibold text-brand">Chrome에서 열기</a>
+        <p className="mt-2 text-xs text-slate-500">QR 스캔은 휴대폰 기본 브라우저로 열립니다. Chrome에서 설치하려면 위 버튼을 사용하세요.</p>
         <button type="button" onClick={onClose} className="w-full mt-5 rounded-full bg-brand text-white font-semibold py-3">닫기</button>
       </div>
     </div>

@@ -8,6 +8,7 @@ import { pauseOfflineDownload } from '../lib/pwa';
 import { useOfflineStore } from '../stores/useOfflineStore';
 import OfflineStatus from '../components/OfflineStatus';
 import AppUpdate from '../components/AppUpdate';
+import VoiceHelp from '../components/VoiceHelp';
 import {
   getStorageInfo, clearContentCaches, clearAllCaches,
   exportBackup, importBackup, resetAllUserData, type StorageInfo,
@@ -16,6 +17,7 @@ import { Card, Row, Toggle, Segmented, SectionHeader } from '../components/ui';
 import { THEMES } from '../stores/useSettingsStore';
 import Icon from '../components/Icon';
 import { isBasicMode } from '../lib/compatibility';
+import { openInChromeUrl } from '../lib/inapp';
 import { isIOS } from '../lib/inapp';
 import { cleanVoices, watchVoices } from '../lib/voiceList';
 
@@ -248,6 +250,8 @@ export default function SettingsPage() {
       </section>
 
 
+      <VoiceHelp />
+
       <section>
         <SectionHeader title="한국어 뜻 읽기" />
         <Card className="divide-y divide-slate-200">
@@ -286,6 +290,7 @@ export default function SettingsPage() {
             <p className="font-semibold">현재 사용 모드: {basic ? '기본 학습' : '전체 기능'}</p>
             <p>구형 Android·Chrome에서는 교재·듣기 위주의 기본 학습 모드로 실행해요. 전체 기능은 지원 중인 Android와 최신 Chrome에서 이용하세요. 기본 모드도 같은 최신 ChinSpeak로 업데이트돼요.</p>
             <a className="inline-block rounded-full border border-brand px-3 py-2 font-semibold text-brand" href={`${import.meta.env.BASE_URL}browser.html#/`}>브라우저 호환 모드 열기</a>
+            <a className="ml-2 inline-block rounded-full border border-brand px-3 py-2 font-semibold text-brand" href={openInChromeUrl(`${window.location.origin}${import.meta.env.BASE_URL}#/`)}>Chrome에서 열고 다시 설치</a>
             {window.location.pathname.endsWith('/browser.html') && <a className="ml-2 inline-block text-brand underline" href={`${import.meta.env.BASE_URL}#/`}>일반 주소로 열기</a>}
             <p className="text-xs text-slate-500">호환 화면을 Chrome에서 연 뒤 ⋮ → 홈 화면에 추가 → 바로가기 만들기로 추가하세요. 앱 설치 대신 Chrome으로 여는 바로가기를 사용해요. 같은 Chrome의 학습 기록과 저장 자료를 사용해요.</p>
           </div>

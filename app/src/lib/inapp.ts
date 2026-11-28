@@ -19,3 +19,16 @@ export const isStandalone = () =>
 
 export const isAndroid = () => typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
 export const isSamsungBrowser = () => typeof navigator !== 'undefined' && /SamsungBrowser/i.test(navigator.userAgent);
+
+/** Android Chrome으로 여는 intent URL. iOS/데스크톱은 일반 URL을 돌려준다. */
+export function openInChromeUrl(url: string): string {
+  if (!isAndroid()) return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return url;
+    const target = `${parsed.host}${parsed.pathname}${parsed.search}`;
+    return `intent://${target}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(url)};end`;
+  } catch {
+    return url;
+  }
+}
