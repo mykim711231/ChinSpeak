@@ -56,8 +56,8 @@ function speakFallback(text: string, rate: number, done?: () => void, lang = 'zh
   const voice = selected && (navigator.onLine || selected.localService) ? selected
     : available.find((v) => v.lang.toLowerCase().replace('_', '-') === lang.toLowerCase() && v.localService)
       ?? available.find((v) => v.localService) ?? available[0];
-  if (!navigator.onLine && !voice) {
-    useOfflineStore.setState({ playbackError: '오프라인 기기 음성이 없어요. 스마트폰에 해당 언어의 음성팩을 설치하거나 저장한 녹음 음성을 선택해 주세요.' });
+  if (!voice) {
+    useOfflineStore.setState({ playbackError: lang.startsWith('ko') ? '한국어 기기 음성이 없어요. 기기 설정에서 한국어 음성팩을 설치하거나 녹음 음성을 선택해 주세요.' : '이 브라우저는 기기 음성을 지원하지 않아요. 녹음 음성을 선택해 주세요.' });
     return done?.();
   }
   const u = new SpeechSynthesisUtterance(lang.startsWith('zh') ? zhSpeech(text) : text);

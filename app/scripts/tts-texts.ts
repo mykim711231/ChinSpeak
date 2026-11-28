@@ -42,10 +42,15 @@ export function collectTexts(lessons: Lesson[]): string[] {
 export const koSpeech = (s: string) => normalizeTts(s.replace(/\([^)]*\)/g, ''));
 export const koHashOf = (s: string) => createHash('sha1').update('ko:' + koSpeech(s)).digest('hex').slice(0, 12);
 export const KO_MANIFEST = join(DATA, 'ko-tts-manifest.json');
-/** 데일리·편하게 듣기·마스터리가 읽는 본문(text) 의 한글 번역 */
+/** 데일리·편하게 듣기·마스터리가 읽는 본문·대화·패턴의 한글 번역 */
 export function collectKo(lessons: Lesson[]): string[] {
   const set = new Set<string>();
-  for (const l of lessons) for (const v of l.text) { const k = koSpeech(v.ko); if (k) set.add(k); }
+  const add = (ko?: string) => { const k = koSpeech(ko ?? ''); if (k) set.add(k); };
+  for (const l of lessons) {
+    for (const v of l.text) add(v.ko);
+    for (const d of l.dialogs) for (const t of d.turns) add(t.verse.ko);
+    for (const p of l.patterns) for (const e of p.examples) add(e.ko);
+  }
   return [...set];
 }
 export function readKoManifest(): Record<string, string> {
