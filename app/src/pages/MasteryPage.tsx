@@ -381,7 +381,7 @@ export function QuizRun({ face, lines, previous, onDone, max = 10, extra, redNot
 }
 
 function MasteryText({ verse }: { verse: Verse }) {
-  const { showPinyin, showMeaningUnits } = useSettingsStore();
+  const { showPinyin, showMeaningUnits, showKo } = useSettingsStore();
   const aligned = !!alignChars(verse.zh, verse.pinyin);
   return (
     <div>
@@ -389,6 +389,7 @@ function MasteryText({ verse }: { verse: Verse }) {
       <div className="reading-zh">
         <HanText zh={verse.zh} pinyin={verse.pinyin} ruby={showPinyin} phrases={verse.phrases} showMeaningUnits={showMeaningUnits} interactive={false} />
       </div>
+      {showKo && verse.ko && <div lang="ko-KR" className="mt-2 text-sm text-slate-600">{verse.ko}</div>}
     </div>
   );
 }
