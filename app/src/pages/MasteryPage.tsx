@@ -311,12 +311,16 @@ export function QuizRun({ face, lines, previous, onDone, max = 10, extra, redNot
   const [wrong, setWrong] = useState<number[]>([]);
   const [correct, setCorrect] = useState(0);
   const [done, setDone] = useState(false);
+  const advanceTimer = useRef<number | null>(null);
   const item = items[n];
   useEffect(() => {
     if (!item || done) return;
     void speakAsync(lines[item.index].verse.zh);
     return () => stopSpeak();
   }, [item, done, lines]);
+  useEffect(() => () => {
+    if (advanceTimer.current !== null) window.clearTimeout(advanceTimer.current);
+  }, []);
 
   if (!items.length) return <p role="status" className="text-sm text-slate-500">이 학습 대상은 문장이 적어 퀴즈를 건너뛰어요. 다음 단계로 가 주세요.</p>;
   if (done) {
@@ -327,6 +331,19 @@ export function QuizRun({ face, lines, previous, onDone, max = 10, extra, redNot
       </section>
     );
   }
+  const nextQuestion = (resCorrect = correct, resWrong = wrong) => {
+    if (advanceTimer.current !== null) {
+      window.clearTimeout(advanceTimer.current);
+      advanceTimer.current = null;
+    }
+    if (n + 1 < items.length) {
+      setN(n + 1);
+      setChosen(null);
+      return;
+    }
+    setDone(true);
+    onDone({ correct: resCorrect, total: items.length }, resWrong, items.map((it) => it.index));
+  };
   const pick = (i: number) => {
     if (chosen !== null) return;
     setChosen(i);
@@ -335,12 +352,8 @@ export function QuizRun({ face, lines, previous, onDone, max = 10, extra, redNot
     const nextWrong = ok ? wrong : [...wrong, item.index];
     setCorrect(nextCorrect);
     setWrong(nextWrong);
-    // 정답 확인 뒤 자동으로 다음 문제로 넘어간다(오답은 조금 더 오래 보여 준다).
-    window.setTimeout(() => {
-      if (n + 1 < items.length) { setN(n + 1); setChosen(null); return; }
-      setDone(true);
-      onDone({ correct: nextCorrect, total: items.length }, nextWrong, items.map((it) => it.index));
-    }, ok ? 1000 : 2200);
+    // 오답은 정답을 확인할 시간을 주기 위해 자동으로 넘어가지 않는다.
+    if (ok) advanceTimer.current = window.setTimeout(() => nextQuestion(nextCorrect, nextWrong), 1000);
   };
   return (
     <section className="space-y-3" aria-label="듣고 이해 퀴즈">
@@ -355,7 +368,12 @@ export function QuizRun({ face, lines, previous, onDone, max = 10, extra, redNot
       {chosen !== null && (
         <div role="status" className="space-y-2">
           <div lang="zh-Hans" className="font-hanzi text-xl">{lines[item.index].verse.zh}</div>
-          <div className="text-sm">{chosen === item.answer ? '정답이에요.' : '아쉬워요. 초록색이 정답이에요. 곧 다음 문제로 넘어가요.'}</div>
+          <div className="text-sm">{chosen === item.answer ? '정답이에요.' : '아쉬워요. 초록색이 정답이에요. 정답을 확인한 뒤 다음 문제로 넘어가세요.'}</div>
+          {chosen !== item.answer && (
+            <button type="button" className={btnBrand} onClick={() => nextQuestion(correct, wrong)}>
+              {n + 1 < items.length ? '다음 문제' : '결과 보기'} <Icon name="chevronRight" size={16} />
+            </button>
+          )}
         </div>
       )}
     </section>
