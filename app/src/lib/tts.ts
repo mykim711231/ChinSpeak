@@ -1,6 +1,7 @@
 // 1차: 사전 합성 mp3 (manifest 조회) / 2차: Web Speech 폴백 (§9.1)
 import { useSettingsStore } from '../stores/useSettingsStore';
 import { useOfflineStore } from '../stores/useOfflineStore';
+import { cleanVoices } from './voiceList';
 const B = import.meta.env.BASE_URL;
 // scripts/tts-texts.ts 의 normalizeTts 와 동일해야 한다
 const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
@@ -50,12 +51,12 @@ function speakFallback(text: string, rate: number, done?: () => void, lang = 'zh
     useOfflineStore.setState({ playbackError: '이 브라우저는 기기 음성을 지원하지 않아요. 녹음 음성을 선택해 주세요.' });
     return done?.();
   }
-  const voices = window.speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().startsWith(lang.slice(0, 2)));
+  const voices = cleanVoices(window.speechSynthesis.getVoices(), lang);
   const { koreanVoiceUri, ttsVoiceUri, ttsVolume } = useSettingsStore.getState();
   const selectedUri = lang.startsWith('ko') ? koreanVoiceUri : ttsVoiceUri;
   const selected = voices.find((v) => v.voiceURI === selectedUri);
-  const available = navigator.onLine ? voices : voices.filter((v) => v.localService);
-  const voice = selected && (navigator.onLine || selected.localService) ? selected
+  const available = navigator.onLine ? voices : voices.filter((v) => v.localService !== false);
+  const voice = selected && (navigator.onLine || selected.localService !== false) ? selected
     : available.find((v) => v.lang.toLowerCase().replace('_', '-') === lang.toLowerCase() && v.localService)
       ?? available.find((v) => v.localService) ?? available[0];
   if (!voice) {

@@ -16,6 +16,8 @@ import { Card, Row, Toggle, Segmented, SectionHeader } from '../components/ui';
 import { THEMES } from '../stores/useSettingsStore';
 import Icon from '../components/Icon';
 import { isBasicMode } from '../lib/compatibility';
+import { isIOS } from '../lib/inapp';
+import { cleanVoices } from '../lib/voiceList';
 
 const pill = 'inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white text-sm font-semibold px-3 py-2';
 
@@ -70,8 +72,8 @@ export default function SettingsPage() {
   const timer = useRef<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [deviceVoices, setDeviceVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const voices = deviceVoices.filter((voice) => /^zh/i.test(voice.lang));
-  const koreanVoices = deviceVoices.filter((voice) => /^ko/i.test(voice.lang));
+  const voices = cleanVoices(deviceVoices, 'zh');
+  const koreanVoices = cleanVoices(deviceVoices, 'ko');
   useEffect(() => {
     if (!ttsSupported()) return;
     const update = () => setDeviceVoices(window.speechSynthesis.getVoices());
@@ -235,12 +237,12 @@ export default function SettingsPage() {
               <Icon name="speaker" size={16} /> 들어보기
             </button>
           </Row>
-          <Row label="중국어 음성 선택" stack description={voices.length ? '기기 음성은 오프라인 사용 가능 여부가 음성팩에 따라 달라요.' : '중국어 음성이 보이지 않으면 스마트폰의 음성 설정에서 중국어 음성팩을 설치해 주세요.'}>
+          <Row label="중국어 음성 선택" stack description={voices.length ? `기기 음성은 오프라인 사용 가능 여부가 음성팩에 따라 달라요.${isIOS() ? ' iPhone/Safari에서는 Google 온라인 음성이 제공되지 않아요.' : ''}` : '중국어 음성이 보이지 않으면 스마트폰의 음성 설정에서 중국어 음성팩을 설치해 주세요.'}>
             <select aria-label="중국어 음성 선택" value={s.ttsVoiceUri ?? ''} disabled={s.voiceMode !== 'device'}
               onChange={(e) => { stopSpeak(); s.setTtsVoiceUri(e.target.value || null); }}
               className="w-full max-w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm disabled:opacity-40 sm:max-w-64">
               <option value="">자동</option>
-              {voices.map((v) => <option key={v.voiceURI} value={v.voiceURI}>{v.name} · {v.lang}{v.localService ? ' (기기)' : ' (온라인)'}</option>)}
+              {voices.map((v) => <option key={v.voiceURI} value={v.voiceURI}>{v.name} · {v.lang}{v.localService !== false ? ' (기기)' : ' (온라인)'}</option>)}
             </select>
           </Row>
         </Card>
@@ -261,12 +263,12 @@ export default function SettingsPage() {
               onChange={(event) => { stopSpeak(); s.setKoreanRate(event.currentTarget.valueAsNumber); }}
               className="h-6 w-36 max-w-full accent-brand" />
           </Row>
-          <Row label="한국어 음성 선택" stack description={koreanVoices.length ? '기기 음성으로 재생할 때 적용돼요.' : '목록이 비어 있으면 기기의 음성 설정에서 한국어 음성을 추가해 주세요.'}>
+          <Row label="한국어 음성 선택" stack description={koreanVoices.length ? `기기 음성으로 재생할 때 적용돼요.${isIOS() ? ' iPhone/Safari에서는 Google 온라인 음성이 제공되지 않아요.' : ''}` : '목록이 비어 있으면 기기의 음성 설정에서 한국어 음성을 추가해 주세요.'}>
             <select aria-label="한국어 음성 선택" value={s.koreanVoiceUri ?? ''}
               onChange={(event) => { stopSpeak(); s.setKoreanVoiceUri(event.target.value || null); }}
               className="w-full max-w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm sm:max-w-64">
               <option value="">자동</option>
-              {koreanVoices.map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} · {voice.localService ? '기기' : '온라인'}</option>)}
+              {koreanVoices.map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} · {voice.localService !== false ? '기기' : '온라인'}</option>)}
             </select>
           </Row>
           <Row label="음성 미리 듣기">
